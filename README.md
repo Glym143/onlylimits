@@ -13,8 +13,9 @@ One job, done well. Native. Tiny. Zero background load.
 ![Binary](https://img.shields.io/badge/binary-940%20KB-2ecc71)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<!-- Drop a screenshot at docs/hero.png and it will show up here -->
-<!-- ![OnlyLimits](docs/hero.png) -->
+<br>
+
+<img src="docs/panel.png" alt="OnlyLimits — every Codex account's remaining limit at once, in the macOS menu bar" width="440">
 
 </div>
 
@@ -56,18 +57,6 @@ Pick from the segmented toggle at the bottom of the panel:
 | ☰ | **All + numbers** | One gauge per account, each with its remaining % beside it |
 
 The menu-bar graphic is a **template image**, so macOS tints it automatically — crisp white on a dark menu bar, black on a light one. Inside the panel the bars stay **colored** (soft green → amber → red) so status reads at a glance without being garish.
-
-## Screenshots
-
-<!--
-Add your own screenshots to a docs/ folder and uncomment:
-
-| Panel | Menu-bar modes |
-|---|---|
-| ![Panel](docs/panel.png) | ![Modes](docs/modes.png) |
--->
-
-> _Add screenshots here before publishing — a hero shot of the panel and a close-up of the three menu-bar modes go a long way._
 
 ## Install
 
