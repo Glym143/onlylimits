@@ -10,6 +10,8 @@
 
 只做一件事，并把它做好。原生、小巧、零后台负载。
 
+**[⬇ 下载 OnlyLimits 1.0 (.dmg)](https://github.com/Glym143/onlylimits/releases/latest)**
+
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-native-0A84FF)
