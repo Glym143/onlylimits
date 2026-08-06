@@ -16,3 +16,6 @@ _research/
 
 # icon build intermediate
 icon/AppIcon.iconset/
+
+# release artifacts
+*.dmg
