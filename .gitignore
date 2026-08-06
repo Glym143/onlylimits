@@ -1,0 +1,15 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Build artifacts
+*.app/
+DerivedData/
+xcuserdata/
+
+# Local reference clones (not part of the project)
+_research/
+
+# macOS
+.DS_Store
