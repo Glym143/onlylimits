@@ -41,8 +41,25 @@ final class UsageStore: ObservableObject {
     @Published var menuMode: MenuMode = MenuMode(rawValue: UserDefaults.standard.string(forKey: "menuMode") ?? "") ?? .active {
         didSet { UserDefaults.standard.set(menuMode.rawValue, forKey: "menuMode") }
     }
-    @Published var language: Language = Language(rawValue: UserDefaults.standard.string(forKey: "language") ?? "") ?? .en {
+    @Published var language: Language = UsageStore.initialLanguage() {
         didSet { UserDefaults.standard.set(language.rawValue, forKey: "language") }
+    }
+
+    /// A saved choice wins; otherwise match the macOS system language if it's one
+    /// we support (ru / ja / zh), else fall back to English.
+    private static func initialLanguage() -> Language {
+        if let saved = UserDefaults.standard.string(forKey: "language"),
+           let lang = Language(rawValue: saved) {
+            return lang
+        }
+        for code in Locale.preferredLanguages {
+            let c = code.lowercased()
+            if c.hasPrefix("ru") { return .ru }
+            if c.hasPrefix("ja") { return .ja }
+            if c.hasPrefix("zh") { return .zh }
+            if c.hasPrefix("en") { return .en }
+        }
+        return .en
     }
     /// Localized strings for the current language.
     var s: Strings { Strings(lang: language) }
