@@ -41,7 +41,7 @@ final class UsageStore: ObservableObject {
     @Published var menuMode: MenuMode = MenuMode(rawValue: UserDefaults.standard.string(forKey: "menuMode") ?? "") ?? .active {
         didSet { UserDefaults.standard.set(menuMode.rawValue, forKey: "menuMode") }
     }
-    @Published var language: Language = Language(rawValue: UserDefaults.standard.string(forKey: "language") ?? "") ?? .ru {
+    @Published var language: Language = Language(rawValue: UserDefaults.standard.string(forKey: "language") ?? "") ?? .en {
         didSet { UserDefaults.standard.set(language.rawValue, forKey: "language") }
     }
     /// Localized strings for the current language.
