@@ -2,6 +2,8 @@
 
 [English](README.md) · [Русский](README.ru.md) · [日本語](README.ja.md) · **中文**
 
+<img src="icon/icon_1024.png" alt="OnlyLimits" width="120">
+
 # OnlyLimits
 
 **在 macOS 菜单栏中，一次性查看你所有 Codex 账户的用量额度。**

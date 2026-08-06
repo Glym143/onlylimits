@@ -2,6 +2,8 @@
 
 **English** · [Русский](README.ru.md) · [日本語](README.ja.md) · [中文](README.zh.md)
 
+<img src="icon/icon_1024.png" alt="OnlyLimits" width="120">
+
 # OnlyLimits
 
 **See the usage limits of all your Codex accounts at once - right in the macOS menu bar.**

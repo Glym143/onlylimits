@@ -13,3 +13,6 @@ _research/
 
 # macOS
 .DS_Store
+
+# icon build intermediate
+icon/AppIcon.iconset/
