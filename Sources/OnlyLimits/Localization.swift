@@ -40,8 +40,8 @@ struct Strings {
     // Empty state
     var noAccounts: String { pick("Пока нет аккаунтов", "No accounts yet", "アカウントがありません", "暂无账户") }
     var emptyHint: String {
-        pick("Нажми «Добавить аккаунт» ниже и войди в ChatGPT. Повтори для каждого — все будут видны здесь сразу.",
-             "Click “Add account” below and sign in to ChatGPT. Repeat for each one — they'll all show here at once.",
+        pick("Нажми «Добавить аккаунт» ниже и войди в ChatGPT. Повтори для каждого - все будут видны здесь сразу.",
+             "Click “Add account” below and sign in to ChatGPT. Repeat for each one - they'll all show here at once.",
              "下の「アカウントを追加」を押して ChatGPT にサインインします。アカウントごとに繰り返すと、すべてここに表示されます。",
              "点击下方的「添加账户」并登录 ChatGPT。为每个账户重复操作，它们会同时显示在这里。")
     }
