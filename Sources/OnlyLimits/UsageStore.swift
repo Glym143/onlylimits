@@ -64,6 +64,15 @@ final class UsageStore: ObservableObject {
     /// Localized strings for the current language.
     var s: Strings { Strings(lang: language) }
 
+    // On by default; a saved choice (incl. off) wins.
+    @Published var autoAnchor: Bool = (UserDefaults.standard.object(forKey: "autoAnchor") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(autoAnchor, forKey: "autoAnchor") }
+    }
+    @Published private(set) var anchoringIDs: Set<String> = []
+    let canAnchor = Anchorer.isAvailable
+    /// Accounts auto-anchored this session, so a failed auto-anchor isn't retried in a loop.
+    private var autoAnchorAttempted: Set<String> = []
+
     @Published var refreshMinutes: Double = 5
 
     private let store = AccountStore()
@@ -118,6 +127,34 @@ final class UsageStore: ObservableObject {
         loginTask = nil
         isLoggingIn = false
         lastMessage = s.loginCancelled
+    }
+
+    /// Send one tiny Codex request as this account to start (anchor) its weekly
+    /// window, so its reset stops sliding forward every refresh.
+    func anchor(id: String) {
+        guard canAnchor, !anchoringIDs.contains(id),
+              let acc = store.accounts.first(where: { $0.id == id }) else { return }
+        anchoringIDs.insert(id)
+        rebuildRows()
+        Task {
+            do {
+                // Refresh first so the CLI won't need to — avoids it rotating the
+                // refresh token out from under our own polling. Persist the fresh set.
+                let r = try await CodexClient.refresh(refreshToken: acc.refreshToken)
+                store.updateTokens(id: id, tokens: r)
+                let outcome = await Anchorer.anchor(accountID: id, access: r.accessToken,
+                                                    idToken: r.idToken ?? "", refresh: r.refreshToken)
+                anchoringIDs.remove(id)
+                lastMessage = outcome.ok ? s.anchored(acc.label)
+                                         : "\(s.anchorFailed): \(outcome.output.suffix(140))"
+                rebuildRows()
+                await refreshAll()
+            } catch {
+                anchoringIDs.remove(id)
+                lastMessage = "\(s.anchorFailed): \(error.localizedDescription)"
+                rebuildRows()
+            }
+        }
     }
 
     /// Secondary path: snapshot whatever account the Codex CLI is logged into.
@@ -205,6 +242,16 @@ final class UsageStore: ObservableObject {
         lastUpdated = .now
         rebuildRows()
         startTimer()          // realign the countdown to the last refresh
+
+        // Auto-anchor any sliding window (once per account per session).
+        if autoAnchor && canAnchor {
+            for row in rows where row.usage?.unanchored == true
+                && !anchoringIDs.contains(row.id)
+                && !autoAnchorAttempted.contains(row.id) {
+                autoAnchorAttempted.insert(row.id)
+                anchor(id: row.id)
+            }
+        }
     }
 
     /// Network round-trip for a single account. Refreshes the access token

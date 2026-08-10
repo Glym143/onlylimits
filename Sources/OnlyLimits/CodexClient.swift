@@ -18,6 +18,7 @@ enum CodexError: LocalizedError {
 struct RefreshedTokens {
     var accessToken: String
     var refreshToken: String      // may be rotated
+    var idToken: String?
     var expiry: Date?
 }
 
@@ -48,11 +49,12 @@ enum CodexClient {
             if code == 401 || code == 400 { throw CodexError.unauthorized }
             throw CodexError.http(code)
         }
-        struct TokenResp: Decodable { var access_token: String; var refresh_token: String? }
+        struct TokenResp: Decodable { var access_token: String; var refresh_token: String?; var id_token: String? }
         let t = try JSONDecoder().decode(TokenResp.self, from: data)
         return RefreshedTokens(
             accessToken: t.access_token,
             refreshToken: t.refresh_token?.isEmpty == false ? t.refresh_token! : refreshToken,
+            idToken: t.id_token,
             expiry: JWT.expiry(t.access_token)
         )
     }

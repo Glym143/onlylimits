@@ -28,8 +28,11 @@ struct MenuContentView: View {
                     ForEach(store.rows) { row in
                         AccountRowView(row: row,
                                        isActive: row.id == store.activeAccountID,
+                                       isAnchoring: store.anchoringIDs.contains(row.id),
+                                       canAnchor: store.canAnchor,
                                        strings: s,
-                                       onRemove: { store.remove(id: row.id) })
+                                       onRemove: { store.remove(id: row.id) },
+                                       onAnchor: { store.anchor(id: row.id) })
                         if row.id != store.rows.last?.id { Divider().padding(.leading, 12) }
                     }
                 }
@@ -108,6 +111,17 @@ struct MenuContentView: View {
                 .labelsHidden()
                 .controlSize(.small)
                 .fixedSize()
+            }
+
+            if store.canAnchor {
+                Toggle(isOn: $store.autoAnchor) {
+                    Text(s.autoAnchorLabel).font(.caption2).foregroundStyle(.secondary)
+                }
+                .toggleStyle(.switch).controlSize(.mini)
+            } else {
+                Text(s.codexNotFound).font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if store.isLoggingIn {
@@ -198,8 +212,11 @@ struct LanguagePicker: View {
 struct AccountRowView: View {
     let row: AccountRow
     let isActive: Bool
+    let isAnchoring: Bool
+    let canAnchor: Bool
     let strings: Strings
     let onRemove: () -> Void
+    let onAnchor: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -241,6 +258,22 @@ struct AccountRowView: View {
                     Text(strings.creditsUnlimited).font(.caption2).foregroundStyle(.secondary)
                 } else if let bal = usage.creditsBalance, (Double(bal) ?? 0) > 0 {
                     Text(strings.creditsBalance(bal)).font(.caption2).foregroundStyle(.secondary)
+                }
+                if isAnchoring {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.mini)
+                        Text(strings.anchoring).font(.caption2).foregroundStyle(.secondary)
+                    }
+                } else if canAnchor && usage.unanchored {
+                    HStack(spacing: 8) {
+                        Label(strings.unanchoredHint, systemImage: "clock.badge.exclamationmark")
+                            .font(.caption2).foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 6)
+                        Button(strings.anchorButton, action: onAnchor)
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .help(strings.anchorHelp)
+                    }
                 }
             } else {
                 Text(strings.loading).font(.caption).foregroundStyle(.secondary)

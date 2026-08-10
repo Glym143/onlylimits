@@ -57,6 +57,33 @@ struct Strings {
     var waitingBrowser: String { pick("Ожидание браузера…", "Waiting for browser…", "ブラウザを待っています…", "等待浏览器…") }
     var cancelLoginHint: String { pick("Нажми, чтобы отменить", "Click to cancel", "クリックしてキャンセル", "点击取消") }
     var loginCancelled: String { pick("Отменено", "Cancelled", "キャンセルしました", "已取消") }
+
+    // Anchoring the weekly window
+    var anchorButton: String { pick("Застолбить", "Anchor", "アンカー", "锚定") }
+    var anchoring: String { pick("Закрепляю…", "Anchoring…", "アンカー中…", "锚定中…") }
+    var unanchoredHint: String {
+        pick("Не начат - сброс уезжает на +7д",
+             "Not started - reset keeps sliding +7d",
+             "未開始 - リセットが +7日 ずれ続けます",
+             "未开始 - 重置持续顺延 +7 天")
+    }
+    var anchorHelp: String {
+        pick("Отправить одно крошечное сообщение, чтобы окно стартовало и сброс перестал уезжать",
+             "Send one tiny message to start the window so its reset stops sliding forward",
+             "小さなメッセージを1回送って枠を開始し、リセットのずれを止めます",
+             "发送一条极小的消息以启动窗口，让重置不再顺延")
+    }
+    func anchored(_ label: String) -> String {
+        pick("Застолблён \(label)", "Anchored \(label)", "アンカー完了：\(label)", "已锚定 \(label)")
+    }
+    var anchorFailed: String { pick("Не удалось застолбить", "Anchor failed", "アンカーに失敗", "锚定失败") }
+    var autoAnchorLabel: String { pick("Авто-якорь при 100%", "Auto-anchor at 100%", "100%で自動アンカー", "100% 时自动锚定") }
+    var codexNotFound: String {
+        pick("Codex CLI не найден - для якоря нужен установленный ChatGPT/codex",
+             "Codex CLI not found - anchoring needs the ChatGPT app or codex installed",
+             "Codex CLI が見つかりません - アンカーには ChatGPT アプリか codex が必要です",
+             "未找到 Codex CLI - 锚定需要安装 ChatGPT 应用或 codex")
+    }
     var importCLI: String { pick("Импорт из CLI", "Import from CLI", "CLI からインポート", "从 CLI 导入") }
     var importCLIHelp: String {
         pick("Взять аккаунт, в который сейчас залогинен Codex CLI",

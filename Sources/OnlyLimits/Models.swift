@@ -66,6 +66,17 @@ struct AccountUsage {
     /// Highest used percentage across all windows — drives the compact bar label.
     var worstPercent: Double { windows.map(\.usedPercent).max() ?? 0 }
 
+    /// True when a window is at 0% and its reset is still a full window away —
+    /// meaning the window hasn't been "started", so its reset keeps sliding
+    /// forward by the full period on every refresh. Sending one small request
+    /// anchors it. (A just-started window has secondsLeft < full period.)
+    var unanchored: Bool {
+        windows.contains { w in
+            guard w.usedPercent == 0, let secs = w.windowSeconds, let reset = w.resetsAt else { return false }
+            return reset.timeIntervalSinceNow >= Double(secs) - 60
+        }
+    }
+
     static func from(_ r: UsageResponse) -> AccountUsage {
         var out = AccountUsage()
         let now = Date()
