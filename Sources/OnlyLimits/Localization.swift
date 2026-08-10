@@ -90,6 +90,7 @@ struct Strings {
         pick("Доступно обновление \(v)", "Update available \(v)", "アップデート \(v) が利用可能", "有新版本 \(v)")
     }
     var updateDownload: String { pick("Скачать", "Download", "ダウンロード", "下载") }
+    var skipVersion: String { pick("Пропустить", "Skip", "スキップ", "跳过") }
     var checkUpdates: String { pick("Проверить обновления", "Check for updates", "アップデートを確認", "检查更新") }
     var upToDate: String { pick("Актуальная версия", "You're up to date", "最新です", "已是最新") }
     var codexNotFound: String {

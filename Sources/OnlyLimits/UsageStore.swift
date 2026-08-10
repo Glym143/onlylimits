@@ -120,15 +120,30 @@ final class UsageStore: ObservableObject {
 
     // MARK: - Updates
 
+    private var skippedVersion = UserDefaults.standard.string(forKey: "skippedVersion") ?? ""
+
     func checkForUpdate(manual: Bool = false) {
         Task {
-            if let upd = await UpdateChecker.check() {
+            if manual {                              // an explicit check un-skips
+                skippedVersion = ""
+                UserDefaults.standard.removeObject(forKey: "skippedVersion")
+            }
+            if let upd = await UpdateChecker.check(), upd.version != skippedVersion {
                 availableUpdate = upd
-            } else if manual {
+            } else {
                 availableUpdate = nil
-                lastMessage = s.upToDate
+                if manual { lastMessage = s.upToDate }
             }
         }
+    }
+
+    /// Dismiss the banner for this version; it reappears only for a newer one.
+    func skipUpdate() {
+        if let v = availableUpdate?.version {
+            skippedVersion = v
+            UserDefaults.standard.set(v, forKey: "skippedVersion")
+        }
+        availableUpdate = nil
     }
 
     func openUpdate() {

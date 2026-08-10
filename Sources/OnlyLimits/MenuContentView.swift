@@ -20,21 +20,22 @@ struct MenuContentView: View {
             header
 
             if let upd = store.availableUpdate {
-                Button { store.openUpdate() } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.down.circle.fill")
-                        Text(s.updateAvailable(upd.version)).font(.caption).bold()
-                        Spacer()
-                        Text(s.updateDownload).font(.caption).bold()
-                        Image(systemName: "arrow.up.forward.app")
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.accentColor)
-                    .contentShape(Rectangle())
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text(s.updateAvailable(upd.version)).font(.caption).bold()
+                    Spacer(minLength: 6)
+                    Button(s.updateDownload) { store.openUpdate() }
+                        .buttonStyle(.borderless).font(.caption).bold()
+                        .foregroundStyle(.white)
+                    Button { store.skipUpdate() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(.borderless).font(.caption)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .help(s.skipVersion)
                 }
-                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.accentColor)
             }
 
             if store.rows.isEmpty {
