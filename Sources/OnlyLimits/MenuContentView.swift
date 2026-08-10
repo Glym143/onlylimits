@@ -216,10 +216,12 @@ struct SettingsPopover: View {
             Divider().padding(.vertical, 3)
 
             if canAnchor {
-                Toggle(isOn: $autoAnchor) {
+                HStack {
                     Text(strings.autoAnchorLabel).font(.callout)
+                    Spacer()
+                    Toggle("", isOn: $autoAnchor)
+                        .toggleStyle(.switch).controlSize(.small).labelsHidden()
                 }
-                .toggleStyle(.switch).controlSize(.small)
                 .padding(.horizontal, 12)
                 Text(strings.anchorHelp)
                     .font(.caption2).foregroundStyle(.secondary)
