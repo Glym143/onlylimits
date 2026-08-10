@@ -59,9 +59,17 @@ struct MenuContentView: View {
         return String(format: "%d:%02d", secs / 60, secs % 60)
     }
 
+    private var appIcon: NSImage {
+        NSApplication.shared.applicationIconImage
+            ?? NSImage(named: NSImage.applicationIconName)
+            ?? NSImage()
+    }
+
     private var header: some View {
         HStack {
-            Image(systemName: "gauge.medium").foregroundStyle(.tint)
+            Image(nsImage: appIcon)
+                .resizable()
+                .frame(width: 18, height: 18)
             Text(s.appTitle).font(.headline)
             Spacer()
             if store.isRefreshing {
