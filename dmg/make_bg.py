@@ -19,25 +19,25 @@ for y in range(H):
 def ctext(cx,y,txt,f,fill):
     w=d.textlength(txt,font=f); d.text((cx-w/2,y),txt,font=f,fill=fill)
 
-# --- title with a tiny LED-bar mark ---
+# --- title with the real app icon ---
 tf=font(30); sf=font(14,bold=False)
 title="OnlyLimits"
 tw=d.textlength(title,font=tf)
-mark_w=34
-total=mark_w+12+tw
-x0=W/2-total/2
-# mini bars mark
-bx=x0; heights=[10,18,26,34]; bw=6; gap=2; base=52
-for i,h in enumerate(heights):
-    col=[RED,AMBER,GREEN,GREEN][i]
-    d.rounded_rectangle([bx+i*(bw+gap),base-h,bx+i*(bw+gap)+bw,base],radius=2,fill=col)
-d.text((x0+mark_w+12, 24), title, font=tf, fill=(240,242,245))
+icon=Image.open("icon/icon_1024.png").convert("RGBA").resize((46,46), Image.LANCZOS)
+gap_i=14
+total=icon.width+gap_i+tw
+x0=int(W/2-total/2)
+title_y=24
+im.paste(icon, (x0, title_y-8), icon)                 # real icon, alpha-composited
+d.text((x0+icon.width+gap_i, title_y), title, font=tf, fill=(240,242,245))
 ctext(W/2, 66, "Codex usage limits, right in your menu bar", sf, (150,156,166))
 
 # --- arrow between the app (left) and Applications (right) ---
+# Icons are centered at x=160 and x=480 at 128px, so their inner edges are ~224
+# and ~416. Keep equal 32px margins on both sides -> arrow spans 256..384.
 ay=214
-d.line([(250,ay),(392,ay)], fill=(120,150,135), width=6)
-d.polygon([(392,ay-16),(392,ay+16),(420,ay)], fill=(120,150,135))
+d.line([(256,ay),(360,ay)], fill=(120,150,135), width=6)
+d.polygon([(360,ay-16),(360,ay+16),(384,ay)], fill=(120,150,135))
 
 # --- caption ---
 ctext(W/2, 356, "Drag  OnlyLimits  into  Applications", font(15,bold=False), (170,176,186))
