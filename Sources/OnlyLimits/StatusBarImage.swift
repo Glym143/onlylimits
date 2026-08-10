@@ -87,9 +87,29 @@ enum StatusBarImage {
         return image
     }
 
-    /// Placeholder shown when there are no accounts yet (adapts to appearance).
+    /// Shown briefly before the first data load (and when there are no accounts):
+    /// a static monochrome version of our bar motif — matches the app icon and the
+    /// live chart, so the launch → data transition is seamless. Template so the
+    /// menu bar tints it (white on dark, black on light).
     static func placeholder() -> NSImage {
-        let img = NSImage(systemSymbolName: "gauge.medium", accessibilityDescription: "Codex") ?? NSImage()
+        let barW: CGFloat = 3.5, gap: CGFloat = 2.5, height: CGFloat = 18, radius: CGFloat = 1.75
+        let bottom: CGFloat = 2, trackH = height - 4
+        let levels: [CGFloat] = [0.25, 0.5, 0.75, 1.0]     // the icon's rising LED bars
+        let width = CGFloat(levels.count) * barW + CGFloat(levels.count - 1) * gap
+        let img = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
+            var x: CGFloat = 0
+            for lvl in levels {
+                let track = NSBezierPath(roundedRect: NSRect(x: x, y: bottom, width: barW, height: trackH),
+                                         xRadius: radius, yRadius: radius)
+                NSColor(white: 0, alpha: 0.30).setFill(); track.fill()
+                let fh = max(1.5, trackH * lvl)
+                let fill = NSBezierPath(roundedRect: NSRect(x: x, y: bottom, width: barW, height: fh),
+                                        xRadius: radius, yRadius: radius)
+                NSColor(white: 0, alpha: 1).setFill(); fill.fill()
+                x += barW + gap
+            }
+            return true
+        }
         img.isTemplate = true
         return img
     }
