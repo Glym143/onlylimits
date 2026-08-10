@@ -29,6 +29,7 @@ struct MenuContentView: View {
                         AccountRowView(row: row,
                                        isActive: row.id == store.activeAccountID,
                                        isAnchoring: store.anchoringIDs.contains(row.id),
+                                       isSliding: store.slidingIDs.contains(row.id),
                                        canAnchor: store.canAnchor,
                                        strings: s,
                                        onRemove: { store.remove(id: row.id) },
@@ -113,17 +114,6 @@ struct MenuContentView: View {
                 .fixedSize()
             }
 
-            if store.canAnchor {
-                Toggle(isOn: $store.autoAnchor) {
-                    Text(s.autoAnchorLabel).font(.caption2).foregroundStyle(.secondary)
-                }
-                .toggleStyle(.switch).controlSize(.mini)
-            } else {
-                Text(s.codexNotFound).font(.caption2).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
             if store.isLoggingIn {
                 // Neutral (bordered) button while waiting — default spinner/text
                 // read correctly in both themes; tap to cancel.
@@ -159,7 +149,10 @@ struct MenuContentView: View {
                     .buttonStyle(.borderless)
                     .help(s.settings)
                     .popover(isPresented: $showLanguage, arrowEdge: .bottom) {
-                        LanguagePicker(strings: s, selection: $store.language) { showLanguage = false }
+                        SettingsPopover(strings: s,
+                                        language: $store.language,
+                                        autoAnchor: $store.autoAnchor,
+                                        canAnchor: store.canAnchor) { showLanguage = false }
                     }
                 Button { NSApplication.shared.terminate(nil) } label: {
                     Image(systemName: "power")
@@ -174,36 +167,56 @@ struct MenuContentView: View {
 
 // MARK: - Language popover
 
-struct LanguagePicker: View {
+struct SettingsPopover: View {
     let strings: Strings
-    @Binding var selection: Language
-    var onPick: () -> Void
+    @Binding var language: Language
+    @Binding var autoAnchor: Bool
+    let canAnchor: Bool
+    var onDismissLanguage: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(strings.languageTitle.uppercased())
                 .font(.caption2).foregroundStyle(.secondary)
-                .padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 2)
+                .padding(.horizontal, 12).padding(.top, 10)
             ForEach(Language.allCases) { lang in
                 Button {
-                    selection = lang
-                    onPick()
+                    language = lang
+                    onDismissLanguage()
                 } label: {
                     HStack {
                         Text(lang.displayName)
                         Spacer()
-                        if lang == selection {
+                        if lang == language {
                             Image(systemName: "checkmark").font(.caption).foregroundStyle(.tint)
                         }
                     }
                     .contentShape(Rectangle())
-                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .padding(.horizontal, 12).padding(.vertical, 5)
                 }
                 .buttonStyle(.plain)
             }
+
+            Divider().padding(.vertical, 3)
+
+            if canAnchor {
+                Toggle(isOn: $autoAnchor) {
+                    Text(strings.autoAnchorLabel).font(.callout)
+                }
+                .toggleStyle(.switch).controlSize(.small)
+                .padding(.horizontal, 12)
+                Text(strings.anchorHelp)
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12).padding(.bottom, 10)
+            } else {
+                Text(strings.codexNotFound)
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12).padding(.bottom, 10)
+            }
         }
-        .frame(width: 150)
-        .padding(.bottom, 6)
+        .frame(width: 250)
     }
 }
 
@@ -213,6 +226,7 @@ struct AccountRowView: View {
     let row: AccountRow
     let isActive: Bool
     let isAnchoring: Bool
+    let isSliding: Bool
     let canAnchor: Bool
     let strings: Strings
     let onRemove: () -> Void
@@ -264,7 +278,7 @@ struct AccountRowView: View {
                         ProgressView().controlSize(.mini)
                         Text(strings.anchoring).font(.caption2).foregroundStyle(.secondary)
                     }
-                } else if canAnchor && usage.unanchored {
+                } else if canAnchor && isSliding {
                     HStack(spacing: 8) {
                         Label(strings.unanchoredHint, systemImage: "clock.badge.exclamationmark")
                             .font(.caption2).foregroundStyle(.orange)

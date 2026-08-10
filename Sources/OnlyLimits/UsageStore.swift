@@ -69,9 +69,14 @@ final class UsageStore: ObservableObject {
         didSet { UserDefaults.standard.set(autoAnchor, forKey: "autoAnchor") }
     }
     @Published private(set) var anchoringIDs: Set<String> = []
+    /// Accounts whose weekly reset was observed sliding forward (not yet started).
+    @Published private(set) var slidingIDs: Set<String> = []
     let canAnchor = Anchorer.isAvailable
-    /// Accounts auto-anchored this session, so a failed auto-anchor isn't retried in a loop.
-    private var autoAnchorAttempted: Set<String> = []
+    /// Previous poll's weekly reset (unix) per account — to detect forward movement.
+    private var lastWeeklyReset: [String: TimeInterval] = [:]
+    /// Accounts just anchored — skip one sliding-eval so the anchor's own forward
+    /// jump in reset time isn't mistaken for sliding.
+    private var anchorGrace: Set<String> = []
 
     @Published var refreshMinutes: Double = 5
 
@@ -88,7 +93,12 @@ final class UsageStore: ObservableObject {
         activeAccountID = AuthImport.currentActiveAccountID()
         rebuildRows()
         startTimer()
-        Task { await refreshAll() }
+        Task {
+            await refreshAll()
+            // A quick second sample so a sliding window is caught within ~40s, not minutes.
+            try? await Task.sleep(nanoseconds: 40_000_000_000)
+            await refreshAll()
+        }
     }
 
     // MARK: - Public actions
@@ -145,8 +155,13 @@ final class UsageStore: ObservableObject {
                 let outcome = await Anchorer.anchor(accountID: id, access: r.accessToken,
                                                     idToken: r.idToken ?? "", refresh: r.refreshToken)
                 anchoringIDs.remove(id)
-                lastMessage = outcome.ok ? s.anchored(acc.label)
-                                         : "\(s.anchorFailed): \(outcome.output.suffix(140))"
+                if outcome.ok {
+                    anchorGrace.insert(id)          // rebaseline next poll (ignore the anchor's own jump)
+                    slidingIDs.remove(id)
+                    lastMessage = s.anchored(acc.label)
+                } else {
+                    lastMessage = "\(s.anchorFailed): \(outcome.output.suffix(140))"
+                }
                 rebuildRows()
                 await refreshAll()
             } catch {
@@ -243,14 +258,34 @@ final class UsageStore: ObservableObject {
         rebuildRows()
         startTimer()          // realign the countdown to the last refresh
 
-        // Auto-anchor any sliding window (once per account per session).
-        if autoAnchor && canAnchor {
-            for row in rows where row.usage?.unanchored == true
-                && !anchoringIDs.contains(row.id)
-                && !autoAnchorAttempted.contains(row.id) {
-                autoAnchorAttempted.insert(row.id)
-                anchor(id: row.id)
+        detectSlidingAndAnchor()
+    }
+
+    /// A weekly window is "sliding" when it's at 0% and its reset keeps moving
+    /// forward every poll (server sets reset = now + 7d until the window starts).
+    /// We detect that by comparing reset across polls — reliable, unlike a single
+    /// snapshot — and anchor whenever movement is seen (continuously).
+    private func detectSlidingAndAnchor() {
+        var sliding: Set<String> = []
+        for row in rows {
+            guard let u = row.usage,
+                  let w = u.windows.max(by: { ($0.windowSeconds ?? 0) < ($1.windowSeconds ?? 0) }),
+                  let reset = w.resetsAt else { continue }
+            let id = row.id
+            let cur = reset.timeIntervalSince1970
+            if anchorGrace.contains(id) {            // ignore the anchor's own forward jump
+                anchorGrace.remove(id)
+                lastWeeklyReset[id] = cur
+                continue
             }
+            if w.usedPercent == 0, let prev = lastWeeklyReset[id], cur > prev + 20 {
+                sliding.insert(id)                   // reset moved forward → still sliding
+            }
+            lastWeeklyReset[id] = cur
+        }
+        slidingIDs = sliding
+        if autoAnchor && canAnchor {
+            for id in sliding where !anchoringIDs.contains(id) { anchor(id: id) }
         }
     }
 
