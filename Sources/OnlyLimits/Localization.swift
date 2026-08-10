@@ -78,6 +78,7 @@ struct Strings {
     }
     var anchorFailed: String { pick("Не удалось застолбить", "Anchor failed", "アンカーに失敗", "锚定失败") }
     var autoAnchorLabel: String { pick("Авто-якорь при 100%", "Auto-anchor at 100%", "100%で自動アンカー", "100% 时自动锚定") }
+    var launchAtLoginLabel: String { pick("Запускать при входе", "Launch at login", "ログイン時に起動", "登录时启动") }
 
     // Sorting
     var sortTitle: String { pick("Сортировка", "Sort", "並び替え", "排序") }

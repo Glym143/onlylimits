@@ -180,6 +180,8 @@ struct MenuContentView: View {
                                         language: $store.language,
                                         sortMode: $store.sortMode,
                                         autoAnchor: $store.autoAnchor,
+                                        launchAtLogin: Binding(get: { store.launchAtLogin },
+                                                               set: { store.setLaunchAtLogin($0) }),
                                         canAnchor: store.canAnchor,
                                         version: UpdateChecker.currentVersion(),
                                         onDismissLanguage: { showLanguage = false },
@@ -203,6 +205,7 @@ struct SettingsPopover: View {
     @Binding var language: Language
     @Binding var sortMode: SortMode
     @Binding var autoAnchor: Bool
+    @Binding var launchAtLogin: Bool
     let canAnchor: Bool
     let version: String
     var onDismissLanguage: () -> Void
@@ -242,6 +245,14 @@ struct SettingsPopover: View {
                     Text(strings.sortRemaining).tag(SortMode.remainingLeast)
                 }
                 .labelsHidden().pickerStyle(.menu).fixedSize()
+            }
+            .padding(.horizontal, 12)
+
+            HStack {
+                Text(strings.launchAtLoginLabel).font(.callout)
+                Spacer()
+                Toggle("", isOn: $launchAtLogin)
+                    .toggleStyle(.switch).controlSize(.small).labelsHidden()
             }
             .padding(.horizontal, 12)
 

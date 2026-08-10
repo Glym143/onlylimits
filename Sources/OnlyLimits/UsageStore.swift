@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 struct AccountRow: Identifiable {
     let id: String
@@ -149,6 +150,24 @@ final class UsageStore: ObservableObject {
     func openUpdate() {
         let target = availableUpdate?.url ?? UpdateChecker.releasesPage
         if let url = URL(string: target) { NSWorkspace.shared.open(url) }
+    }
+
+    // MARK: - Launch at login (modern SMAppService, macOS 13+)
+
+    @Published var launchAtLogin: Bool = (SMAppService.mainApp.status == .enabled)
+
+    func setLaunchAtLogin(_ on: Bool) {
+        let svc = SMAppService.mainApp
+        do {
+            if on {
+                if svc.status != .enabled { try svc.register() }
+            } else {
+                if svc.status == .enabled { try svc.unregister() }
+            }
+        } catch {
+            lastMessage = "Login item: \(error.localizedDescription)"
+        }
+        launchAtLogin = (SMAppService.mainApp.status == .enabled)   // reflect the real state
     }
 
     // MARK: - Public actions
