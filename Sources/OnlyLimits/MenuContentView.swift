@@ -184,8 +184,10 @@ struct MenuContentView: View {
                                                                set: { store.setLaunchAtLogin($0) }),
                                         canAnchor: store.canAnchor,
                                         version: UpdateChecker.currentVersion(),
+                                        updateState: store.updateCheckState,
                                         onDismissLanguage: { showLanguage = false },
-                                        onCheckUpdate: { store.checkForUpdate(manual: true) })
+                                        onCheckUpdate: { store.checkForUpdate(manual: true) },
+                                        onOpen: { store.resetUpdateStatus() })
                     }
                 Button { NSApplication.shared.terminate(nil) } label: {
                     Image(systemName: "power")
@@ -208,8 +210,10 @@ struct SettingsPopover: View {
     @Binding var launchAtLogin: Bool
     let canAnchor: Bool
     let version: String
+    let updateState: UpdateCheckState
     var onDismissLanguage: () -> Void
     var onCheckUpdate: () -> Void
+    var onOpen: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -281,12 +285,23 @@ struct SettingsPopover: View {
             HStack {
                 Text("OnlyLimits \(version)").font(.caption2).foregroundStyle(.secondary)
                 Spacer()
-                Button(strings.checkUpdates) { onCheckUpdate() }
-                    .buttonStyle(.link).font(.caption)
+                switch updateState {
+                case .checking:
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(strings.checking).font(.caption).foregroundStyle(.secondary)
+                    }
+                case .upToDate:
+                    Text(strings.upToDate).font(.caption).foregroundStyle(.secondary)
+                case .idle:
+                    Button(strings.checkUpdates) { onCheckUpdate() }
+                        .buttonStyle(.link).font(.caption)
+                }
             }
             .padding(.horizontal, 12).padding(.bottom, 10)
         }
         .frame(width: 250)
+        .onAppear { onOpen() }
     }
 }
 

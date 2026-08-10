@@ -94,6 +94,7 @@ struct Strings {
     var skipVersion: String { pick("Пропустить", "Skip", "スキップ", "跳过") }
     var checkUpdates: String { pick("Проверить обновления", "Check for updates", "アップデートを確認", "检查更新") }
     var upToDate: String { pick("Актуальная версия", "You're up to date", "最新です", "已是最新") }
+    var checking: String { pick("Проверяю…", "Checking…", "確認中…", "检查中…") }
     var codexNotFound: String {
         pick("Codex CLI не найден - для якоря нужен установленный ChatGPT/codex",
              "Codex CLI not found - anchoring needs the ChatGPT app or codex installed",

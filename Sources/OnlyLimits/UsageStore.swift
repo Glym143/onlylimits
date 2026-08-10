@@ -37,6 +37,9 @@ enum SortMode: String, CaseIterable {
     case remainingLeast   // the most-constrained (least remaining) on top
 }
 
+/// State of a manual "Check for updates" click (shown in Settings).
+enum UpdateCheckState { case idle, checking, upToDate }
+
 @MainActor
 final class UsageStore: ObservableObject {
     @Published private(set) var rows: [AccountRow] = []
@@ -45,6 +48,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published var lastMessage: String?          // transient import/error banner
     @Published var availableUpdate: UpdateChecker.Update?
+    @Published var updateCheckState: UpdateCheckState = .idle
     @Published var isLoggingIn = false
     @Published private(set) var activeAccountID: String?
     @Published var menuMode: MenuMode = MenuMode(rawValue: UserDefaults.standard.string(forKey: "menuMode") ?? "") ?? .active {
@@ -124,19 +128,25 @@ final class UsageStore: ObservableObject {
     private var skippedVersion = UserDefaults.standard.string(forKey: "skippedVersion") ?? ""
 
     func checkForUpdate(manual: Bool = false) {
+        if manual {                                  // an explicit check un-skips + shows a spinner
+            updateCheckState = .checking
+            skippedVersion = ""
+            UserDefaults.standard.removeObject(forKey: "skippedVersion")
+        }
         Task {
-            if manual {                              // an explicit check un-skips
-                skippedVersion = ""
-                UserDefaults.standard.removeObject(forKey: "skippedVersion")
-            }
-            if let upd = await UpdateChecker.check(), upd.version != skippedVersion {
+            let upd = await UpdateChecker.check()
+            if let upd, upd.version != skippedVersion {
                 availableUpdate = upd
+                if manual { updateCheckState = .idle }     // the panel banner shows it
             } else {
                 availableUpdate = nil
-                if manual { lastMessage = s.upToDate }
+                if manual { updateCheckState = .upToDate }
             }
         }
     }
+
+    /// Reset the check status so reopening the gear shows the button fresh.
+    func resetUpdateStatus() { updateCheckState = .idle }
 
     /// Dismiss the banner for this version; it reappears only for a newer one.
     func skipUpdate() {
