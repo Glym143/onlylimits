@@ -19,6 +19,24 @@ struct MenuContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
 
+            if let upd = store.availableUpdate {
+                Button { store.openUpdate() } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        Text(s.updateAvailable(upd.version)).font(.caption).bold()
+                        Spacer()
+                        Text(s.updateDownload).font(.caption).bold()
+                        Image(systemName: "arrow.up.forward.app")
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.accentColor)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+
             if store.rows.isEmpty {
                 emptyState
             } else {
@@ -161,7 +179,10 @@ struct MenuContentView: View {
                                         language: $store.language,
                                         sortMode: $store.sortMode,
                                         autoAnchor: $store.autoAnchor,
-                                        canAnchor: store.canAnchor) { showLanguage = false }
+                                        canAnchor: store.canAnchor,
+                                        version: UpdateChecker.currentVersion(),
+                                        onDismissLanguage: { showLanguage = false },
+                                        onCheckUpdate: { store.checkForUpdate(manual: true) })
                     }
                 Button { NSApplication.shared.terminate(nil) } label: {
                     Image(systemName: "power")
@@ -182,7 +203,9 @@ struct SettingsPopover: View {
     @Binding var sortMode: SortMode
     @Binding var autoAnchor: Bool
     let canAnchor: Bool
+    let version: String
     var onDismissLanguage: () -> Void
+    var onCheckUpdate: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -241,6 +264,15 @@ struct SettingsPopover: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 12).padding(.bottom, 10)
             }
+
+            Divider().padding(.vertical, 3)
+            HStack {
+                Text("OnlyLimits \(version)").font(.caption2).foregroundStyle(.secondary)
+                Spacer()
+                Button(strings.checkUpdates) { onCheckUpdate() }
+                    .buttonStyle(.link).font(.caption)
+            }
+            .padding(.horizontal, 12).padding(.bottom, 10)
         }
         .frame(width: 250)
     }

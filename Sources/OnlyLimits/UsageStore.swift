@@ -43,6 +43,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var nextRefreshAt: Date?
     @Published private(set) var isRefreshing = false
     @Published var lastMessage: String?          // transient import/error banner
+    @Published var availableUpdate: UpdateChecker.Update?
     @Published var isLoggingIn = false
     @Published private(set) var activeAccountID: String?
     @Published var menuMode: MenuMode = MenuMode(rawValue: UserDefaults.standard.string(forKey: "menuMode") ?? "") ?? .active {
@@ -93,6 +94,7 @@ final class UsageStore: ObservableObject {
     private let store = AccountStore()
     private var stateByID: [String: (usage: AccountUsage?, error: String?, loading: Bool)] = [:]
     private var timer: Timer?
+    private var updateTimer: Timer?
     private var loginTask: Task<Void, Never>?
 
     init() {
@@ -105,10 +107,33 @@ final class UsageStore: ObservableObject {
         startTimer()
         Task {
             await refreshAll()
+            checkForUpdate()
             // A quick second sample so a sliding window is caught within ~40s, not minutes.
             try? await Task.sleep(nanoseconds: 40_000_000_000)
             await refreshAll()
         }
+        // Re-check for updates every 6 hours.
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in
+            Task { await self?.checkForUpdate() }
+        }
+    }
+
+    // MARK: - Updates
+
+    func checkForUpdate(manual: Bool = false) {
+        Task {
+            if let upd = await UpdateChecker.check() {
+                availableUpdate = upd
+            } else if manual {
+                availableUpdate = nil
+                lastMessage = s.upToDate
+            }
+        }
+    }
+
+    func openUpdate() {
+        let target = availableUpdate?.url ?? UpdateChecker.releasesPage
+        if let url = URL(string: target) { NSWorkspace.shared.open(url) }
     }
 
     // MARK: - Public actions

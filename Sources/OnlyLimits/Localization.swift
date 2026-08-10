@@ -84,6 +84,14 @@ struct Strings {
     var sortDefault: String { pick("Как добавлены", "As added", "追加順", "添加顺序") }
     var sortReset: String { pick("Скоро сброс", "Soonest reset", "リセットが近い順", "最快重置") }
     var sortRemaining: String { pick("Меньше осталось", "Least remaining", "残りが少ない順", "剩余最少") }
+
+    // Updates
+    func updateAvailable(_ v: String) -> String {
+        pick("Доступно обновление \(v)", "Update available \(v)", "アップデート \(v) が利用可能", "有新版本 \(v)")
+    }
+    var updateDownload: String { pick("Скачать", "Download", "ダウンロード", "下载") }
+    var checkUpdates: String { pick("Проверить обновления", "Check for updates", "アップデートを確認", "检查更新") }
+    var upToDate: String { pick("Актуальная версия", "You're up to date", "最新です", "已是最新") }
     var codexNotFound: String {
         pick("Codex CLI не найден - для якоря нужен установленный ChatGPT/codex",
              "Codex CLI not found - anchoring needs the ChatGPT app or codex installed",
