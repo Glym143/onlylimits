@@ -27,10 +27,10 @@ icon=Image.open("icon/icon_1024.png").convert("RGBA").resize((46,46), Image.LANC
 gap_i=14
 total=icon.width+gap_i+tw
 x0=int(W/2-total/2)
-title_y=24
+title_y=40
 im.paste(icon, (x0, title_y-8), icon)                 # real icon, alpha-composited
 d.text((x0+icon.width+gap_i, title_y), title, font=tf, fill=(240,242,245))
-ctext(W/2, 66, "Codex usage limits, right in your menu bar", sf, (150,156,166))
+ctext(W/2, title_y+42, "Codex usage limits, right in your menu bar", sf, (150,156,166))
 
 # --- arrow between the app (left) and Applications (right) ---
 # Icons are centered at x=160 and x=480 at 128px, so their inner edges are ~224
