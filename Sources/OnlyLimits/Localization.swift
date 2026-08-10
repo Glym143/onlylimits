@@ -78,6 +78,12 @@ struct Strings {
     }
     var anchorFailed: String { pick("Не удалось застолбить", "Anchor failed", "アンカーに失敗", "锚定失败") }
     var autoAnchorLabel: String { pick("Авто-якорь при 100%", "Auto-anchor at 100%", "100%で自動アンカー", "100% 时自动锚定") }
+
+    // Sorting
+    var sortTitle: String { pick("Сортировка", "Sort", "並び替え", "排序") }
+    var sortDefault: String { pick("Как добавлены", "As added", "追加順", "添加顺序") }
+    var sortReset: String { pick("Скоро сброс", "Soonest reset", "リセットが近い順", "最快重置") }
+    var sortRemaining: String { pick("Меньше осталось", "Least remaining", "残りが少ない順", "剩余最少") }
     var codexNotFound: String {
         pick("Codex CLI не найден - для якоря нужен установленный ChatGPT/codex",
              "Codex CLI not found - anchoring needs the ChatGPT app or codex installed",

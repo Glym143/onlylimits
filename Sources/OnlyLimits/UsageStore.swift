@@ -29,6 +29,13 @@ enum MenuMode: String, CaseIterable {
     case allNumbers  // every account as a bar + its %
 }
 
+/// How account rows are ordered in the panel.
+enum SortMode: String, CaseIterable {
+    case `default`        // order accounts were added
+    case resetSoonest     // the one that resets first on top
+    case remainingLeast   // the most-constrained (least remaining) on top
+}
+
 @MainActor
 final class UsageStore: ObservableObject {
     @Published private(set) var rows: [AccountRow] = []
@@ -43,6 +50,9 @@ final class UsageStore: ObservableObject {
     }
     @Published var language: Language = UsageStore.initialLanguage() {
         didSet { UserDefaults.standard.set(language.rawValue, forKey: "language") }
+    }
+    @Published var sortMode: SortMode = SortMode(rawValue: UserDefaults.standard.string(forKey: "sortMode") ?? "") ?? .default {
+        didSet { UserDefaults.standard.set(sortMode.rawValue, forKey: "sortMode"); rebuildRows() }
     }
 
     /// A saved choice wins; otherwise match the macOS system language if it's one
@@ -329,10 +339,35 @@ final class UsageStore: ObservableObject {
     // MARK: - Helpers
 
     private func rebuildRows() {
-        rows = store.accounts.map { a in
+        let built = store.accounts.map { a -> AccountRow in
             let st = stateByID[a.id]
             return AccountRow(id: a.id, label: a.label, plan: a.planType,
                               usage: st?.usage, error: st?.error, isLoading: st?.loading ?? false)
+        }
+        rows = sorted(built)
+    }
+
+    /// Weekly reset (unix) for sorting; no-data sorts last.
+    private func weeklyReset(_ r: AccountRow) -> TimeInterval {
+        r.usage?.windows.max(by: { ($0.windowSeconds ?? 0) < ($1.windowSeconds ?? 0) })?
+            .resetsAt?.timeIntervalSince1970 ?? .greatestFiniteMagnitude
+    }
+
+    private func sorted(_ rows: [AccountRow]) -> [AccountRow] {
+        switch sortMode {
+        case .default:
+            return rows
+        case .resetSoonest:
+            return rows.sorted { a, b in
+                let ra = weeklyReset(a), rb = weeklyReset(b)
+                return ra != rb ? ra < rb : a.label < b.label
+            }
+        case .remainingLeast:
+            return rows.sorted { a, b in
+                let ra = remaining(a).map(Double.init) ?? .greatestFiniteMagnitude
+                let rb = remaining(b).map(Double.init) ?? .greatestFiniteMagnitude
+                return ra != rb ? ra < rb : a.label < b.label
+            }
         }
     }
 

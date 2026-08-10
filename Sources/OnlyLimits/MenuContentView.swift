@@ -151,6 +151,7 @@ struct MenuContentView: View {
                     .popover(isPresented: $showLanguage, arrowEdge: .bottom) {
                         SettingsPopover(strings: s,
                                         language: $store.language,
+                                        sortMode: $store.sortMode,
                                         autoAnchor: $store.autoAnchor,
                                         canAnchor: store.canAnchor) { showLanguage = false }
                     }
@@ -170,6 +171,7 @@ struct MenuContentView: View {
 struct SettingsPopover: View {
     let strings: Strings
     @Binding var language: Language
+    @Binding var sortMode: SortMode
     @Binding var autoAnchor: Bool
     let canAnchor: Bool
     var onDismissLanguage: () -> Void
@@ -196,6 +198,20 @@ struct SettingsPopover: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            Divider().padding(.vertical, 3)
+
+            HStack {
+                Text(strings.sortTitle).font(.callout)
+                Spacer()
+                Picker("", selection: $sortMode) {
+                    Text(strings.sortDefault).tag(SortMode.default)
+                    Text(strings.sortReset).tag(SortMode.resetSoonest)
+                    Text(strings.sortRemaining).tag(SortMode.remainingLeast)
+                }
+                .labelsHidden().pickerStyle(.menu).fixedSize()
+            }
+            .padding(.horizontal, 12)
 
             Divider().padding(.vertical, 3)
 
