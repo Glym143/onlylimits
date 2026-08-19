@@ -10,7 +10,7 @@
 
 One job, done well. Native. Tiny. Zero background load.
 
-**[⬇ Download OnlyLimits 1.1 (.dmg)](https://github.com/Glym143/onlylimits/releases/latest)**
+**[⬇ Download OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/latest)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
