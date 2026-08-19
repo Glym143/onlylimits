@@ -10,7 +10,7 @@
 
 只做一件事，并把它做好。原生、小巧、零后台负载。
 
-**[⬇ 下载 OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/latest)**
+**[⬇ 下载 OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -71,6 +71,12 @@
 菜单栏图形是一张**模板图像（template image）**,因此 macOS 会自动为其上色-在深色菜单栏上呈清晰的白色,在浅色菜单栏上呈黑色。而在面板内部,条形保持**彩色**（柔和的绿色 → 琥珀色 → 红色）,这样状态一眼可辨,又不至于刺眼。
 
 ## 安装
+
+### 下载
+
+**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - 打开后把 **OnlyLimits** 拖到 **Applications** 即可。
+
+本应用未经过公证（这是一个没有付费 Apple Developer 账号的免费工具）,因此 macOS 会拦截首次启动:右键点击 `OnlyLimits.app` →**打开**→**打开**,或执行 `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app`。
 
 ### 环境要求
 - macOS 14 (Sonoma) 或更高版本

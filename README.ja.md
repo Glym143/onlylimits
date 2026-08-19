@@ -10,7 +10,7 @@
 
 一つの仕事を、しっかりとこなす。ネイティブ。極小。バックグラウンド負荷はゼロ。
 
-**[⬇ OnlyLimits 1.2 をダウンロード (.dmg)](https://github.com/Glym143/onlylimits/releases/latest)**
+**[⬇ OnlyLimits 1.2 をダウンロード (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -71,6 +71,12 @@
 メニューバーのグラフィックは**テンプレート画像**なので、macOS が自動的に色を調整します - 暗いメニューバーでは鮮明な白、明るいメニューバーでは黒。パネル内ではバーは**カラー**のまま（柔らかい緑 → 黄 → 赤）で、派手すぎることなく一目で状態が分かります。
 
 ## インストール
+
+### ダウンロード
+
+**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - 開いて **OnlyLimits** を **Applications** にドラッグします。
+
+このアプリは公証されていない（有料の Apple Developer アカウントを持たない無料ツールです）ため、初回起動は macOS にブロックされます。`OnlyLimits.app` を右クリック →**開く**→**開く**、または `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app` を実行してください。
 
 ### 必要環境
 - macOS 14 (Sonoma) 以降
