@@ -50,6 +50,8 @@
 | 📊 **自定义菜单栏迷你图表** | 一幅手绘的状态图形-就像系统监视器一样-而不是一串挤在一起的数字。三种显示模式（见下文）。 |
 | 🟢 **显示剩余，而非已用** | 条形显示的是**还剩多少**:满格且为绿色 = 富余充足，空格且为红色 = 快用完了。这才是你真正关心的数字。 |
 | ⏱️ **实时刷新倒计时** | 精确看到距离下次自动更新还有多久;一键即可立即刷新。 |
+| 🧠 **还有 Mac 内存** | 已用内存与用量限额并排显示 - 菜单栏是芯片图标 + **已用 GB**,面板里是条形图,附总容量、交换空间以及 macOS 的**内存压力**（绿 / 黄 / 红）。 |
+| 💽 **…以及磁盘空间** | 启动卷同样如此 - 菜单栏是磁盘图标 + **已占用容量**,面板里是条形图,附总容量与剩余空间。颜色按*剩余*空间判断,只有磁盘真的快满时才会报警。 |
 | 🌍 **4 种语言** | Русский · English · 日本語 · 中文 - 从齿轮菜单中即时切换。 |
 | 🪶 **轻若鸿毛** | 原生 SwiftUI、零依赖,没有 Electron/Node/Python。CPU 占用微乎其微,二进制文件极小。 |
 | 🔒 **本地且私密** | 只与 OpenAI 的端点通信。凭据绝不离开你的 Mac;没有分析统计、没有服务器、没有遥测。 |
@@ -63,6 +65,8 @@
 | 👤 | **活跃** | Codex CLI 当前登录的那个账户-一个仪表 + 其百分比 |
 | 📊 | **全部（条形）** | 每个账户一个仪表,紧凑排列,不带数字 |
 | ☰ | **全部 + 数字** | 每个账户一个仪表,每个旁边标注其剩余百分比 |
+
+这三种模式旁边还有 🧠 和 💽 两个按钮:它们分别把**已用内存(或已用磁盘空间)**加到当前模式已显示的内容旁-任意模式下均可,一键开关。面板中的内存行与存储行则在 ⚙️ 中单独开关。
 
 菜单栏图形是一张**模板图像（template image）**,因此 macOS 会自动为其上色-在深色菜单栏上呈清晰的白色,在浅色菜单栏上呈黑色。而在面板内部,条形保持**彩色**（柔和的绿色 → 琥珀色 → 红色）,这样状态一眼可辨,又不至于刺眼。
 
@@ -103,6 +107,8 @@ cp -R OnlyLimits.app /Applications/
 - **用量**数据来自 `GET https://chatgpt.com/backend-api/wham/usage`（`Authorization: Bearer …`、`ChatGPT-Account-Id: …`）。响应中携带 `email`、`plan_type` 以及速率限制窗口信息,因此每个账户都能自我标注。
 - **令牌**通过 `POST https://auth.openai.com/oauth/token` 刷新-在临近过期时主动刷新,并在遇到 401 时被动刷新并重试一次。
 - 各时间窗口按其**实际时长**标注,因此应用始终反映真实情况（Codex 目前暴露的是一个每周窗口;如果返回的是 5 小时窗口,它也会正确显示）。
+- **磁盘空间**取自 `/` 卷的资源值-总容量与 “available for important usage”,即可用空间*加上* macOS 可清除的部分,正是 Finder 显示的那个数字。与内存的二进制 GiB 不同,磁盘按 Finder 的十进制 GB/TB 计算。每 30 秒采样一次。
+- **Mac 内存**直接从内核读取（`host_statistics64` + `sysctl`,不调用任何外部命令）:*已用 = 应用 + 联动 + 已压缩*,与「活动监视器」的算法完全一致（缓存文件不计入“已用”）。颜色取自内核报告的**内存压力**等级,而非单纯的百分比-一台靠缓存和压缩页面占到 90% 的 Mac 完全健康。每 2-3 秒采样一次,只有可见数字发生变化时才重绘。
 
 ## 性能与占用
 
@@ -139,6 +145,8 @@ Sources/OnlyLimits/
 ├── AccountStore.swift        # persistence
 ├── AuthImport.swift          # read ~/.codex/auth.json, detect active account
 ├── Models.swift              # API response + normalized model
+├── MemoryMonitor.swift       # Mac RAM sampling (mach + sysctl) + pressure
+├── DiskMonitor.swift         # startup-volume capacity (Finder's numbers)
 └── Localization.swift        # ru / en / ja / zh strings
 ```
 

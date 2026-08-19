@@ -80,6 +80,102 @@ struct Strings {
     var autoAnchorLabel: String { pick("Авто-якорь при 100%", "Auto-anchor at 100%", "100%で自動アンカー", "100% 时自动锚定") }
     var launchAtLoginLabel: String { pick("Запускать при входе", "Launch at login", "ログイン時に起動", "登录时启动") }
 
+    // Mac memory
+    var memoryTitle: String { pick("Память Mac", "Mac memory", "Mac メモリ", "Mac 内存") }
+    /// Caption under the used figure: "из 128 ГБ" — `total` comes in with its unit.
+    func ofTotal(_ total: String) -> String {
+        pick("из \(total)", "of \(total)", "\(total) 中", "共 \(total)")
+    }
+    func memorySwap(_ x: String) -> String {
+        pick("swap \(x) \(memUnit)", "swap \(x) \(memUnit)", "スワップ \(x) \(memUnit)", "交换 \(x) \(memUnit)")
+    }
+    var memoryPressureNormal: String { pick("норма", "normal", "正常", "正常") }
+    var memoryPressureWarning: String { pick("нагрузка", "under pressure", "逼迫", "偏紧") }
+    var memoryPressureCritical: String { pick("критично", "critical", "危険", "紧张") }
+    var memoryPressureHelp: String {
+        pick("Нагрузка на память по данным macOS - важнее, чем сам процент занятого",
+             "Memory pressure as macOS reports it - it matters more than the raw used %",
+             "macOS が報告するメモリ圧迫レベル - 使用率そのものより重要です",
+             "macOS 报告的内存压力 - 比占用百分比本身更重要")
+    }
+    /// Tooltip breakdown; parts already formatted by `gb(_:)`.
+    func memoryBreakdown(app: String, wired: String, compressed: String, cached: String) -> String {
+        let (a, w, c, f) = pick(
+            ("Приложения", "Зарезервировано", "Сжато", "Кэш файлов"),
+            ("App", "Wired", "Compressed", "Cached files"),
+            ("アプリ", "確保済み", "圧縮", "キャッシュ"),
+            ("应用", "联动", "已压缩", "缓存文件"))
+        return "\(a) \(app) · \(w) \(wired) · \(c) \(compressed) · \(f) \(cached) \(memUnit)"
+    }
+    var memoryPanelLabel: String { pick("Показывать в панели", "Show in panel", "パネルに表示", "在面板中显示") }
+    /// Help for the menu-bar toggle that sits next to the display-mode picker.
+    var memoryMenuBarHelp: String {
+        pick("Добавить занятую память Mac к тому, что показано в строке меню",
+             "Add used Mac memory to what the menu bar shows",
+             "使用中の Mac メモリをメニューバーの表示に追加",
+             "在菜单栏已显示的内容旁加上已用 Mac 内存")
+    }
+
+    // Mac storage
+    var diskTitle: String { pick("Диск Mac", "Mac storage", "Mac ストレージ", "Mac 存储") }
+    func diskFree(_ x: String) -> String {
+        pick("свободно \(x)", "\(x) free", "空き \(x)", "剩余 \(x)")
+    }
+    /// Tooltip; parts already formatted by `disk(_:)`.
+    func diskBreakdown(name: String, used: String, free: String, total: String) -> String {
+        let (u, f, t) = pick(("занято", "свободно", "всего"),
+                             ("used", "free", "total"),
+                             ("使用中", "空き", "合計"),
+                             ("已用", "剩余", "共"))
+        return pick("\(name) · \(u) \(used) · \(f) \(free) · \(t) \(total)",
+                    "\(name) · \(used) \(u) · \(free) \(f) · \(total) \(t)",
+                    "\(name) · \(u) \(used) · \(f) \(free) · \(t) \(total)",
+                    "\(name) · \(u) \(used) · \(f) \(free) · \(t) \(total)")
+    }
+    var diskMenuBarHelp: String {
+        pick("Добавить занятое место на диске к тому, что показано в строке меню",
+             "Add used disk space to what the menu bar shows",
+             "使用中のディスク容量をメニューバーの表示に追加",
+             "在菜单栏已显示的内容旁加上已用磁盘空间")
+    }
+    /// Shown in Settings above the two "show in panel" switches.
+    var panelSectionTitle: String { pick("В панели", "In the panel", "パネル内", "面板内") }
+
+    var memUnit: String { pick("ГБ", "GB", "GB", "GB") }
+    var tbUnit: String { pick("ТБ", "TB", "TB", "TB") }
+
+    /// Bytes → a short localized number of gigabytes ("85,3" / "128"), binary GiB
+    /// like Activity Monitor reports RAM.
+    func gb(_ bytes: UInt64) -> String { gb(bytes, decimals: bytes < 107_374_182_400 ? 1 : 0) }
+
+    /// Menu-bar variant: no decimals once we're past 10 GB, so the title stays narrow.
+    func gbCompact(_ bytes: UInt64) -> String {
+        "\(gb(bytes, decimals: bytes < 10_737_418_240 ? 1 : 0)) \(memUnit)"
+    }
+
+    /// Disk sizes use decimal units with the unit attached ("3,0 ТБ" / "512 ГБ") —
+    /// that's how Finder and "About This Mac" count storage.
+    func disk(_ bytes: UInt64) -> String {
+        if bytes >= 1_000_000_000_000 {
+            return "\(number(Double(bytes) / 1_000_000_000_000, decimals: 1)) \(tbUnit)"
+        }
+        let v = Double(bytes) / 1_000_000_000
+        return "\(number(v, decimals: v < 10 ? 1 : 0)) \(memUnit)"
+    }
+
+    private func gb(_ bytes: UInt64, decimals: Int) -> String {
+        number(Double(bytes) / 1_073_741_824, decimals: decimals)
+    }
+
+    /// Localized decimal separator (",8" in ru, ".8" in en) at a fixed precision.
+    private func number(_ v: Double, decimals: Int) -> String {
+        let nf = NumberFormatter()
+        nf.locale = Locale(identifier: lang.localeID)
+        nf.minimumFractionDigits = decimals
+        nf.maximumFractionDigits = decimals
+        return nf.string(from: v as NSNumber) ?? String(format: "%.\(decimals)f", v)
+    }
+
     // Sorting
     var sortTitle: String { pick("Сортировка", "Sort", "並び替え", "排序") }
     var sortDefault: String { pick("Как добавлены", "As added", "追加順", "添加顺序") }

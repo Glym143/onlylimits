@@ -50,6 +50,8 @@ And it's built to disappear into the system: a **940 KB** binary, **no external 
 | 📊 **Custom menu-bar mini chart** | A hand-drawn status graphic - like a system monitor - not a mashed string of numbers. Three display modes (below). |
 | 🟢 **Remaining, not used** | Bars show what's **left**: full & green = plenty, empty & red = almost out. The number you actually care about. |
 | ⏱️ **Live refresh countdown** | See exactly how long until the next automatic update; refresh now with one click. |
+| 🧠 **Mac memory too** | RAM in use right beside your limits - a chip + **gigabytes used** in the menu bar, and a bar in the panel with the total, swap, and the macOS **memory pressure** (green / amber / red). |
+| 💽 **…and disk space** | The startup volume the same way - a drive glyph + **how much is taken** in the menu bar, a bar in the panel with the total and what's free. Colored by the room that's *left*, so it only shouts when the disk is actually filling up. |
 | 🌍 **4 languages** | Русский · English · 日本語 · 中文 - switch instantly from the gear menu. |
 | 🪶 **Featherweight** | Native SwiftUI, zero dependencies, no Electron/Node/Python. Negligible CPU, tiny binary. |
 | 🔒 **Local & private** | Talks only to OpenAI's endpoints. Credentials never leave your Mac; no analytics, no servers, no telemetry. |
@@ -63,6 +65,8 @@ Pick from the segmented toggle at the bottom of the panel:
 | 👤 | **Active** | The account the Codex CLI is currently logged into - one gauge + its % |
 | 📊 | **All (bars)** | One gauge per account, compact, no numbers |
 | ☰ | **All + numbers** | One gauge per account, each with its remaining % beside it |
+
+Next to those three sit two buttons - 🧠 and 💽: each **adds the RAM (or disk space) in use** to whatever the chosen mode already shows, in any mode, on or off in one click. The panel's memory and storage rows toggle separately in ⚙️.
 
 The menu-bar graphic is a **template image**, so macOS tints it automatically - crisp white on a dark menu bar, black on a light one. Inside the panel the bars stay **colored** (soft green → amber → red) so status reads at a glance without being garish.
 
@@ -103,6 +107,8 @@ cp -R OnlyLimits.app /Applications/
 - **Usage** comes from `GET https://chatgpt.com/backend-api/wham/usage` (`Authorization: Bearer …`, `ChatGPT-Account-Id: …`). The response carries `email`, `plan_type`, and the rate-limit windows, so each account labels itself.
 - **Tokens** refresh via `POST https://auth.openai.com/oauth/token` - proactively near expiry and reactively on a 401 with one retry.
 - Windows are labeled by their **actual duration**, so the app always reflects reality (Codex currently exposes a weekly window; if a 5-hour window returns, it shows up correctly).
+- **Disk space** comes from the volume's own resource values for `/` - capacity and "available for important usage", i.e. free space *plus* what macOS can purge, which is exactly the number Finder shows. Counted in decimal GB/TB like Finder, unlike RAM's binary GiB. Sampled every 30 s.
+- **Mac memory** is read straight from the kernel (`host_statistics64` + `sysctl`), no shelling out: *used = app + wired + compressed*, exactly how Activity Monitor accounts for it (cached files are not "used"). The color follows the kernel's **memory pressure** level rather than the raw percentage - a Mac sitting at 90% with cache and compressed pages is perfectly healthy. Sampled every 2-3 s, and only redrawn when a visible digit actually changes.
 
 ## Performance & footprint
 
@@ -139,6 +145,8 @@ Sources/OnlyLimits/
 ├── AccountStore.swift        # persistence
 ├── AuthImport.swift          # read ~/.codex/auth.json, detect active account
 ├── Models.swift              # API response + normalized model
+├── MemoryMonitor.swift       # Mac RAM sampling (mach + sysctl) + pressure
+├── DiskMonitor.swift         # startup-volume capacity (Finder's numbers)
 └── Localization.swift        # ru / en / ja / zh strings
 ```
 

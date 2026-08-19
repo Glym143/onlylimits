@@ -25,8 +25,14 @@ enum Palette {
 enum StatusBarImage {
     struct Value { let remaining: Double; let color: NSColor }
 
+    /// A system readout appended after the account bars: an SF Symbol + its value
+    /// (e.g. chip + "86 ГБ", drive + "3,0 ТБ"). Own glyph so it never reads as another
+    /// account bar — those show what's LEFT, these show what's TAKEN.
+    struct Extra { let symbol: String; let text: String }
+
     /// - showNumber: when true, each bar is followed by its own "NN%".
-    static func make(values: [Value], showNumber: Bool) -> NSImage {
+    /// - extras: system readouts appended after a hairline separator, in order.
+    static func make(values: [Value], showNumber: Bool, extras: [Extra] = []) -> NSImage {
         let barW: CGFloat = 3.5
         let radius: CGFloat = 1.75
         let height: CGFloat = 18
@@ -36,6 +42,8 @@ enum StatusBarImage {
         let numGap: CGFloat = 3      // bar → its number
         let groupGap: CGFloat = 8    // account → next account (with numbers)
         let barGap: CGFloat = 2.5    // bar → next bar (no numbers)
+        let sepGap: CGFloat = 5      // accounts ↔ separator ↔ memory
+        let sepW: CGFloat = 1
 
         struct Item { let v: Value; let text: NSString?; let size: NSSize }
         let items: [Item] = values.map { v in
@@ -45,12 +53,28 @@ enum StatusBarImage {
             return Item(v: v, text: t, size: size)
         }
 
+        // System readouts: glyph + value, one group each.
+        let glyphGap: CGFloat = 1    // the SF Symbol carries its own side bearing
+        let extraGap: CGFloat = 7    // one readout → the next
+        struct Drawn { let glyph: NSImage?; let text: NSString; let size: NSSize }
+        let drawn: [Drawn] = extras.map { e in
+            let t = e.text as NSString
+            return Drawn(glyph: glyph(e.symbol), text: t, size: t.size(withAttributes: [.font: font]))
+        }
+        func groupWidth(_ d: Drawn) -> CGFloat {
+            (d.glyph.map { $0.size.width + glyphGap } ?? 0) + d.size.width
+        }
+
         // Total width.
         var width: CGFloat = 0
         for (i, it) in items.enumerated() {
             width += barW
             if let _ = it.text { width += numGap + it.size.width }
             if i < items.count - 1 { width += showNumber ? groupGap : barGap }
+        }
+        if !drawn.isEmpty {
+            if !items.isEmpty { width += sepGap + sepW + sepGap }
+            width += drawn.map(groupWidth).reduce(0, +) + CGFloat(drawn.count - 1) * extraGap
         }
         width = max(width, barW)
 
@@ -61,7 +85,7 @@ enum StatusBarImage {
 
         let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
             var x: CGFloat = 0
-            for it in items {
+            for (i, it) in items.enumerated() {
                 let track = NSBezierPath(roundedRect: NSRect(x: x, y: bottom, width: barW, height: trackH),
                                          xRadius: radius, yRadius: radius)
                 trackInk.setFill()
@@ -79,12 +103,43 @@ enum StatusBarImage {
                            withAttributes: [.font: font, .foregroundColor: ink])
                     x += numGap + it.size.width
                 }
-                x += showNumber ? groupGap : barGap
+                if i < items.count - 1 { x += showNumber ? groupGap : barGap }
+            }
+
+            if !drawn.isEmpty && !items.isEmpty {
+                x += sepGap
+                trackInk.setFill()
+                NSRect(x: x, y: bottom + 1, width: sepW, height: trackH - 2).fill()
+                x += sepW + sepGap
+            }
+            for (i, d) in drawn.enumerated() {
+                if let g = d.glyph {
+                    g.draw(in: NSRect(x: x, y: (height - g.size.height) / 2,
+                                      width: g.size.width, height: g.size.height))
+                    x += g.size.width + glyphGap
+                }
+                d.text.draw(at: NSPoint(x: x, y: (height - d.size.height) / 2),
+                            withAttributes: [.font: font, .foregroundColor: ink])
+                x += d.size.width
+                if i < drawn.count - 1 { x += extraGap }
             }
             return true
         }
         image.isTemplate = true
         return image
+    }
+
+    /// SF Symbol sized to sit next to 11pt digits. Template → draws as ink.
+    /// Cached: the menu-bar image is rebuilt every few seconds.
+    private static var glyphCache: [String: NSImage] = [:]
+    private static func glyph(_ name: String) -> NSImage? {
+        if let cached = glyphCache[name] { return cached }
+        let cfg = NSImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        guard let img = NSImage(systemSymbolName: name, accessibilityDescription: name)?
+            .withSymbolConfiguration(cfg) else { return nil }
+        img.isTemplate = true
+        glyphCache[name] = img
+        return img
     }
 
     /// Shown briefly before the first data load (and when there are no accounts):

@@ -61,6 +61,78 @@ final class UsageStore: ObservableObject {
         didSet { UserDefaults.standard.set(sortMode.rawValue, forKey: "sortMode"); rebuildRows() }
     }
 
+    // MARK: - Mac memory & storage
+
+    /// Latest RAM sample; nil while both memory readouts are off (or on a read failure).
+    @Published private(set) var memory: MemorySnapshot?
+    /// Latest startup-volume sample; nil while both storage readouts are off.
+    @Published private(set) var disk: DiskSnapshot?
+    /// Memory section in the panel. On by default; a saved choice (incl. off) wins.
+    @Published var showMemory: Bool = (UserDefaults.standard.object(forKey: "showMemory") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(showMemory, forKey: "showMemory"); startMemoryTimer() }
+    }
+    /// "chip 86 ГБ" group in the menu bar.
+    @Published var memoryInMenuBar: Bool = (UserDefaults.standard.object(forKey: "memoryInMenuBar") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(memoryInMenuBar, forKey: "memoryInMenuBar"); startMemoryTimer() }
+    }
+    /// Storage section in the panel.
+    @Published var showDisk: Bool = (UserDefaults.standard.object(forKey: "showDisk") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(showDisk, forKey: "showDisk"); startDiskTimer() }
+    }
+    /// "drive 3,0 ТБ" group in the menu bar.
+    @Published var diskInMenuBar: Bool = (UserDefaults.standard.object(forKey: "diskInMenuBar") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(diskInMenuBar, forKey: "diskInMenuBar"); startDiskTimer() }
+    }
+    private var memTimer: Timer?
+    private var diskTimer: Timer?
+    private var panelVisible = false
+
+    /// The panel opened/closed — sample faster while it's on screen, and don't
+    /// poll at all when nothing is showing these.
+    func panelDidAppear() { panelVisible = true; startMemoryTimer(); startDiskTimer() }
+    func panelDidDisappear() { panelVisible = false; startMemoryTimer(); startDiskTimer() }
+
+    private func startMemoryTimer() {
+        memTimer?.invalidate()
+        memTimer = nil
+        guard showMemory || memoryInMenuBar else { memory = nil; return }
+        sampleMemory()
+        // Menu-bar readout is always on screen → steady 3s. Panel-only → 2s while
+        // it's open, nothing while it's closed.
+        let interval: TimeInterval? = memoryInMenuBar ? 3 : (panelVisible ? 2 : nil)
+        guard let interval else { return }
+        memTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.sampleMemory() }
+        }
+    }
+
+    /// Free space moves in minutes, not seconds — a much lazier beat than RAM.
+    private func startDiskTimer() {
+        diskTimer?.invalidate()
+        diskTimer = nil
+        guard showDisk || diskInMenuBar else { disk = nil; return }
+        sampleDisk()
+        let interval: TimeInterval? = diskInMenuBar ? 30 : (panelVisible ? 15 : nil)
+        guard let interval else { return }
+        diskTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.sampleDisk() }
+        }
+    }
+
+    private func sampleMemory() {
+        guard let fresh = MemorySampler.sample() else { return }
+        // Only publish when something visible moved — otherwise every tick would
+        // redraw the menu-bar image and the whole panel for a few stray pages.
+        if let cur = memory, !cur.visiblyDiffers(from: fresh) { return }
+        memory = fresh
+    }
+
+    private func sampleDisk() {
+        guard let fresh = DiskSampler.sample() else { return }
+        if let cur = disk, !cur.visiblyDiffers(from: fresh) { return }
+        disk = fresh
+    }
+
     /// A saved choice wins; otherwise match the macOS system language if it's one
     /// we support (ru / ja / zh), else fall back to English.
     private static func initialLanguage() -> Language {
@@ -110,6 +182,8 @@ final class UsageStore: ObservableObject {
         activeAccountID = AuthImport.currentActiveAccountID()
         rebuildRows()
         startTimer()
+        startMemoryTimer()
+        startDiskTimer()
         Task {
             await refreshAll()
             checkForUpdate()
@@ -288,8 +362,20 @@ final class UsageStore: ObservableObject {
     /// The menu-bar image: a compact colored mini bar chart.
     /// active → one bar + %, all → one bar per account.
     var statusImage: NSImage {
+        var extras: [StatusBarImage.Extra] = []
+        if memoryInMenuBar, let m = memory {
+            extras.append(.init(symbol: "memorychip", text: s.gbCompact(m.used)))
+        }
+        if diskInMenuBar, let d = disk {
+            extras.append(.init(symbol: "internaldrive", text: s.disk(d.used)))
+        }
+
         let loaded = rows.filter { $0.usage != nil }
-        guard !loaded.isEmpty else { return StatusBarImage.placeholder() }
+        guard !loaded.isEmpty else {
+            // No usage data yet — still show the system readouts if that's all we have.
+            if !extras.isEmpty { return StatusBarImage.make(values: [], showNumber: false, extras: extras) }
+            return StatusBarImage.placeholder()
+        }
 
         func value(_ r: AccountRow) -> StatusBarImage.Value {
             let rem = Double(remaining(r) ?? 0)
@@ -300,11 +386,11 @@ final class UsageStore: ObservableObject {
         case .active:
             let row = loaded.first(where: { $0.id == activeAccountID })
                 ?? loaded.min(by: { (remaining($0) ?? 100) < (remaining($1) ?? 100) })!
-            return StatusBarImage.make(values: [value(row)], showNumber: true)
+            return StatusBarImage.make(values: [value(row)], showNumber: true, extras: extras)
         case .all:
-            return StatusBarImage.make(values: loaded.map(value), showNumber: false)
+            return StatusBarImage.make(values: loaded.map(value), showNumber: false, extras: extras)
         case .allNumbers:
-            return StatusBarImage.make(values: loaded.map(value), showNumber: true)
+            return StatusBarImage.make(values: loaded.map(value), showNumber: true, extras: extras)
         }
     }
 

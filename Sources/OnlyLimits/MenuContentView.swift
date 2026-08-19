@@ -67,9 +67,21 @@ struct MenuContentView: View {
             }
 
             Divider().padding(.top, 8)
+
+            if store.showMemory, let mem = store.memory {
+                MemoryRowView(mem: mem, strings: s)
+                Divider()
+            }
+            if store.showDisk, let disk = store.disk {
+                DiskRowView(disk: disk, strings: s)
+                Divider()
+            }
+
             footer
         }
         .frame(width: 340)
+        .onAppear { store.panelDidAppear() }
+        .onDisappear { store.panelDidDisappear() }
     }
 
     /// "m:ss" remaining until the given date.
@@ -139,6 +151,22 @@ struct MenuContentView: View {
                 .labelsHidden()
                 .controlSize(.small)
                 .fixedSize()
+
+                // Independent of the mode above: these add "how much is taken"
+                // to whatever those modes already put in the menu bar.
+                Toggle(isOn: $store.memoryInMenuBar) {
+                    Image(systemName: "memorychip")
+                }
+                .toggleStyle(.button)
+                .controlSize(.small)
+                .help(s.memoryMenuBarHelp)
+
+                Toggle(isOn: $store.diskInMenuBar) {
+                    Image(systemName: "internaldrive")
+                }
+                .toggleStyle(.button)
+                .controlSize(.small)
+                .help(s.diskMenuBarHelp)
             }
 
             if store.isLoggingIn {
@@ -182,6 +210,8 @@ struct MenuContentView: View {
                                         autoAnchor: $store.autoAnchor,
                                         launchAtLogin: Binding(get: { store.launchAtLogin },
                                                                set: { store.setLaunchAtLogin($0) }),
+                                        showMemory: $store.showMemory,
+                                        showDisk: $store.showDisk,
                                         canAnchor: store.canAnchor,
                                         version: UpdateChecker.currentVersion(),
                                         updateState: store.updateCheckState,
@@ -208,6 +238,8 @@ struct SettingsPopover: View {
     @Binding var sortMode: SortMode
     @Binding var autoAnchor: Bool
     @Binding var launchAtLogin: Bool
+    @Binding var showMemory: Bool
+    @Binding var showDisk: Bool
     let canAnchor: Bool
     let version: String
     let updateState: UpdateCheckState
@@ -257,6 +289,28 @@ struct SettingsPopover: View {
                 Spacer()
                 Toggle("", isOn: $launchAtLogin)
                     .toggleStyle(.switch).controlSize(.small).labelsHidden()
+            }
+            .padding(.horizontal, 12)
+
+            Divider().padding(.vertical, 3)
+
+            Text(strings.panelSectionTitle.uppercased())
+                .font(.caption2).foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+            HStack {
+                Label(strings.memoryTitle, systemImage: "memorychip").font(.callout)
+                Spacer()
+                Toggle("", isOn: $showMemory)
+                    .toggleStyle(.switch).controlSize(.small).labelsHidden()
+                    .help(strings.memoryPanelLabel)
+            }
+            .padding(.horizontal, 12)
+            HStack {
+                Label(strings.diskTitle, systemImage: "internaldrive").font(.callout)
+                Spacer()
+                Toggle("", isOn: $showDisk)
+                    .toggleStyle(.switch).controlSize(.small).labelsHidden()
+                    .help(strings.memoryPanelLabel)
             }
             .padding(.horizontal, 12)
 
@@ -380,6 +434,113 @@ struct AccountRowView: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Mac memory
+// Same bar idiom as the limits, but it shows what's TAKEN (that's how everyone
+// reads RAM). Colored by macOS memory pressure, not by the raw percentage —
+// a Mac sitting at 90% with cache and compressed pages is perfectly healthy.
+
+struct MemoryRowView: View {
+    let mem: MemorySnapshot
+    let strings: Strings
+
+    private var usedPercent: Double { mem.usedPercent }
+    private var color: Color { UsageColor.forRemaining(mem.pressure.paletteRemaining) }
+
+    private var pressureText: String {
+        switch mem.pressure {
+        case .normal: return strings.memoryPressureNormal
+        case .warning: return strings.memoryPressureWarning
+        case .critical: return strings.memoryPressureCritical
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 5) {
+                Image(systemName: "memorychip").font(.caption).foregroundStyle(.secondary)
+                Text(strings.memoryTitle).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(strings.gb(mem.used)) \(strings.memUnit)")
+                    .font(.caption).monospacedDigit().bold().foregroundStyle(.primary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.15))
+                    Capsule().fill(color)
+                        .frame(width: usedPercent / 100 * geo.size.width)
+                }
+            }
+            .frame(height: 6)
+            HStack(spacing: 6) {
+                Text(strings.ofTotal("\(strings.gb(mem.total)) \(strings.memUnit)"))
+                    .font(.caption2).foregroundStyle(.tertiary)
+                if mem.swapUsed > 0 {
+                    Text("·").font(.caption2).foregroundStyle(.tertiary)
+                    Text(strings.memorySwap(strings.gb(mem.swapUsed)))
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+                Spacer(minLength: 4)
+                HStack(spacing: 4) {
+                    Circle().fill(color).frame(width: 5, height: 5)
+                    Text(pressureText).font(.caption2).foregroundStyle(.tertiary)
+                }
+                .help(strings.memoryPressureHelp)
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .help(strings.memoryBreakdown(app: strings.gb(mem.app),
+                                      wired: strings.gb(mem.wired),
+                                      compressed: strings.gb(mem.compressed),
+                                      cached: strings.gb(mem.cached)))
+    }
+}
+
+// MARK: - Mac storage
+// Same shape as the memory row. Colored by how much room is LEFT, though:
+// a 75%-full disk is fine, one with a few gigabytes left is not.
+
+struct DiskRowView: View {
+    let disk: DiskSnapshot
+    let strings: Strings
+
+    private var color: Color { UsageColor.forRemaining(disk.paletteRemaining) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 5) {
+                Image(systemName: "internaldrive").font(.caption).foregroundStyle(.secondary)
+                Text(strings.diskTitle).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(strings.disk(disk.used))
+                    .font(.caption).monospacedDigit().bold().foregroundStyle(.primary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.15))
+                    Capsule().fill(color)
+                        .frame(width: disk.usedPercent / 100 * geo.size.width)
+                }
+            }
+            .frame(height: 6)
+            HStack(spacing: 6) {
+                Text(strings.ofTotal(strings.disk(disk.total)))
+                    .font(.caption2).foregroundStyle(.tertiary)
+                Spacer(minLength: 4)
+                HStack(spacing: 4) {
+                    Circle().fill(color).frame(width: 5, height: 5)
+                    Text(strings.diskFree(strings.disk(disk.available)))
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .help(strings.diskBreakdown(name: disk.volumeName,
+                                    used: strings.disk(disk.used),
+                                    free: strings.disk(disk.available),
+                                    total: strings.disk(disk.total)))
     }
 }
 
