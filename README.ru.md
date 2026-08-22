@@ -10,7 +10,7 @@
 
 Одна задача, выполненная хорошо. Нативно. Крошечно. Нулевая фоновая нагрузка.
 
-**[⬇ Скачать OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
+**[⬇ Скачать OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -74,7 +74,7 @@
 
 ### Скачать
 
-**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - открой и перетащи **OnlyLimits** в **Applications**.
+**[⬇ OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)** - открой и перетащи **OnlyLimits** в **Applications**.
 
 Приложение не нотаризовано (это бесплатный инструмент без платного аккаунта Apple Developer), поэтому первый запуск macOS блокирует: правый клик по `OnlyLimits.app` → **Открыть** → **Открыть**, либо выполни `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app`.
 

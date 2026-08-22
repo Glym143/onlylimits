@@ -4,11 +4,11 @@
 # directly — no flaky Finder automation).
 #
 #   one-time:  python3 -m pip install --user dmgbuild
-#   run:       ./build.sh && dmg/build_dmg.sh [version]     (default 1.2)
+#   run:       ./build.sh && dmg/build_dmg.sh [version]     (default 1.3)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="${1:-1.2}"
+VERSION="${1:-1.3}"
 OUT="OnlyLimits-${VERSION}.dmg"
 
 [ -d OnlyLimits.app ] || { echo "build OnlyLimits.app first: ./build.sh"; exit 1; }

@@ -10,7 +10,7 @@
 
 只做一件事，并把它做好。原生、小巧、零后台负载。
 
-**[⬇ 下载 OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
+**[⬇ 下载 OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -74,7 +74,7 @@
 
 ### 下载
 
-**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - 打开后把 **OnlyLimits** 拖到 **Applications** 即可。
+**[⬇ OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)** - 打开后把 **OnlyLimits** 拖到 **Applications** 即可。
 
 本应用未经过公证（这是一个没有付费 Apple Developer 账号的免费工具）,因此 macOS 会拦截首次启动:右键点击 `OnlyLimits.app` →**打开**→**打开**,或执行 `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app`。
 

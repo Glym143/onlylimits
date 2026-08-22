@@ -10,7 +10,7 @@
 
 一つの仕事を、しっかりとこなす。ネイティブ。極小。バックグラウンド負荷はゼロ。
 
-**[⬇ OnlyLimits 1.2 をダウンロード (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
+**[⬇ OnlyLimits 1.3 をダウンロード (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -74,7 +74,7 @@
 
 ### ダウンロード
 
-**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - 開いて **OnlyLimits** を **Applications** にドラッグします。
+**[⬇ OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)** - 開いて **OnlyLimits** を **Applications** にドラッグします。
 
 このアプリは公証されていない（有料の Apple Developer アカウントを持たない無料ツールです）ため、初回起動は macOS にブロックされます。`OnlyLimits.app` を右クリック →**開く**→**開く**、または `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app` を実行してください。
 

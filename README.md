@@ -10,7 +10,7 @@
 
 One job, done well. Native. Tiny. Zero background load.
 
-**[⬇ Download OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)**
+**[⬇ Download OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)**
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
@@ -74,7 +74,7 @@ The menu-bar graphic is a **template image**, so macOS tints it automatically - 
 
 ### Download
 
-**[⬇ OnlyLimits 1.2 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.2/OnlyLimits-1.2.dmg)** - open it and drag **OnlyLimits** into **Applications**.
+**[⬇ OnlyLimits 1.3 (.dmg)](https://github.com/Glym143/onlylimits/releases/download/v1.3/OnlyLimits-1.3.dmg)** - open it and drag **OnlyLimits** into **Applications**.
 
 The app isn't notarized (this is a free tool without a paid Apple Developer account), so macOS blocks the very first launch: right-click `OnlyLimits.app` → **Open** → **Open**, or run `xattr -dr com.apple.quarantine /Applications/OnlyLimits.app`.
 
