@@ -54,21 +54,27 @@ struct MenuContentView: View {
                                        onRemove: { store.remove(id: row.id) },
                                        onAnchor: { store.anchor(id: row.id) },
                                        loginBusy: store.isLoggingIn,
-                                       onReconnect: { store.reconnect(id: row.id) })
+                                       onReconnect: { store.reconnect(id: row.id) },
+                                       onCancelReconnect: { store.cancelLogin() })
                         if row.id != store.rows.last?.id { Divider().padding(.leading, 12) }
                     }
                 }
             }
 
+            Divider()
+
+            // Its own band between two rules, like the memory and storage rows
+            // below — floating in the gap above them left a dead strip whenever
+            // there was no message to show.
             if let msg = store.lastMessage {
-                Text(msg)
+                Text(msg.text(s))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14).padding(.top, 8)
                     .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                Divider()
             }
-
-            Divider().padding(.top, 8)
 
             if store.showMemory, let mem = store.memory {
                 MemoryRowView(mem: mem, strings: s)
@@ -375,6 +381,7 @@ struct AccountRowView: View {
     /// Some browser sign-in is already in flight — don't offer a second one.
     let loginBusy: Bool
     let onReconnect: () -> Void
+    let onCancelReconnect: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -403,7 +410,8 @@ struct AccountRowView: View {
                     .help(strings.removeAccountHelp)
             }
 
-            if let error = row.error, row.usage == nil {
+            if let error = row.needsReauth ? strings.sessionExpired : row.error,
+               row.usage == nil {
                 // Message and action share one line — same shape as the anchor
                 // hint below, so a failing row doesn't grow a second stacked row.
                 HStack(spacing: 8) {
@@ -413,17 +421,27 @@ struct AccountRowView: View {
                     if row.needsReauth {
                         Spacer(minLength: 6)
                         // A dead refresh token can only be revived by a fresh
-                        // browser sign-in — offer it right where the failure shows.
-                        if row.isReconnecting {
-                            ProgressView().controlSize(.mini)
-                        } else {
-                            // Worded, so the control needs no explaining — the
-                            // status text beside it is kept terse to make room.
-                            Button(strings.reconnect, action: onReconnect)
-                                .buttonStyle(.bordered).controlSize(.small)
-                                .disabled(loginBusy)
-                                .help(strings.reconnectHelp)
+                        // browser sign-in — offer it right where the failure
+                        // shows. One button throughout: while the browser is
+                        // open it turns into a spinner that cancels, like the
+                        // one in the footer. The label stays in the ZStack
+                        // (invisible) so the control keeps its width and the
+                        // rows below don't jump in any language.
+                        Button(action: row.isReconnecting ? onCancelReconnect : onReconnect) {
+                            ZStack {
+                                Text(strings.reconnect)
+                                    .opacity(row.isReconnecting ? 0 : 1)
+                                if row.isReconnecting {
+                                    HStack(spacing: 5) {
+                                        ProgressView().controlSize(.mini)
+                                        Text(strings.cancel)
+                                    }
+                                }
+                            }
                         }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .disabled(loginBusy && !row.isReconnecting)
+                        .help(row.isReconnecting ? strings.cancelLoginHint : strings.reconnectHelp)
                     }
                 }
             } else if let usage = row.usage {

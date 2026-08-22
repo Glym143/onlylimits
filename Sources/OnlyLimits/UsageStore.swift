@@ -28,6 +28,40 @@ private struct FetchOutcome {
     var needsReauth: Bool = false
 }
 
+/// One line of feedback for the panel banner, kept as a *value* rather than a
+/// finished sentence: the banner outlives a language switch, so the wording has
+/// to be resolved when it is drawn. `.detail` carries text that is already a
+/// sentence (a provider or system error) and is shown as-is.
+enum StatusMessage: Equatable {
+    case openingBrowser
+    case loginCancelled
+    case reconnectCancelled(String)
+    case added(String)
+    case updated(String)
+    case reconnected(String)
+    case reconnectedOther(got: String, expected: String)
+    case anchored(String)
+    case anchorFailed(String)
+    case loginItemFailed(String)
+    case detail(String)
+
+    func text(_ s: Strings) -> String {
+        switch self {
+        case .openingBrowser:               return s.openingBrowser
+        case .loginCancelled:               return s.loginCancelled
+        case .reconnectCancelled(let l):    return s.reconnectCancelled(l)
+        case .added(let l):                 return s.added(l)
+        case .updated(let l):               return s.updated(l)
+        case .reconnected(let l):           return s.reconnected(l)
+        case .reconnectedOther(let g, let e): return s.reconnectedOther(g, e)
+        case .anchored(let l):              return s.anchored(l)
+        case .anchorFailed(let d):          return "\(s.anchorFailed): \(d)"
+        case .loginItemFailed(let d):       return "\(s.launchAtLoginLabel): \(d)"
+        case .detail(let d):                return d
+        }
+    }
+}
+
 /// What the menu-bar title shows.
 enum MenuMode: String, CaseIterable {
     case active      // only the account Codex is logged into right now (bar + %)
@@ -51,7 +85,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var lastUpdated: Date?
     @Published private(set) var nextRefreshAt: Date?
     @Published private(set) var isRefreshing = false
-    @Published var lastMessage: String?          // transient import/error banner
+    @Published var lastMessage: StatusMessage?   // transient import/error banner
     @Published var availableUpdate: UpdateChecker.Update?
     @Published var updateCheckState: UpdateCheckState = .idle
     @Published var isLoggingIn = false
@@ -256,7 +290,7 @@ final class UsageStore: ObservableObject {
                 if svc.status == .enabled { try svc.unregister() }
             }
         } catch {
-            lastMessage = "Login item: \(error.localizedDescription)"
+            lastMessage = .loginItemFailed(error.localizedDescription)
         }
         launchAtLogin = (SMAppService.mainApp.status == .enabled)   // reflect the real state
     }
@@ -268,22 +302,22 @@ final class UsageStore: ObservableObject {
     func loginWithBrowser() {
         guard !isLoggingIn else { return }
         isLoggingIn = true
-        lastMessage = s.openingBrowser
+        lastMessage = .openingBrowser
         loginTask = Task {
             do {
                 let acc = try await CodexLogin.login()
                 let isNew = store.upsert(acc)
-                lastMessage = isNew ? s.added(acc.label) : s.updated(acc.label)
+                lastMessage = isNew ? .added(acc.label) : .updated(acc.label)
                 isLoggingIn = false
                 loginTask = nil
                 rebuildRows()
                 await refreshAll()
             } catch is CancellationError {
-                lastMessage = s.loginCancelled
+                lastMessage = .loginCancelled
                 isLoggingIn = false
                 loginTask = nil
             } catch {
-                lastMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                lastMessage = .detail((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
                 isLoggingIn = false
                 loginTask = nil
             }
@@ -301,7 +335,7 @@ final class UsageStore: ObservableObject {
         let expected = store.accounts.first(where: { $0.id == id })?.label ?? id
         isLoggingIn = true
         reconnectingIDs.insert(id)
-        lastMessage = s.openingBrowser
+        lastMessage = .openingBrowser
         rebuildRows()
         loginTask = Task {
             defer {
@@ -318,16 +352,16 @@ final class UsageStore: ObservableObject {
                     // expired-session warning, while the first poll runs.
                     stateByID[id] = (usage: stateByID[id]?.usage, error: nil,
                                      loading: true, needsReauth: false)
-                    lastMessage = s.reconnected(acc.label)
+                    lastMessage = .reconnected(acc.label)
                 } else {
-                    lastMessage = s.reconnectedOther(acc.label, expected)
+                    lastMessage = .reconnectedOther(got: acc.label, expected: expected)
                 }
                 rebuildRows()
                 await refreshAll()
             } catch is CancellationError {
-                lastMessage = s.loginCancelled
+                lastMessage = .reconnectCancelled(expected)
             } catch {
-                lastMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                lastMessage = .detail((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
             }
         }
     }
@@ -339,7 +373,7 @@ final class UsageStore: ObservableObject {
         loginTask = nil
         isLoggingIn = false
         reconnectingIDs.removeAll()
-        lastMessage = s.loginCancelled
+        lastMessage = .loginCancelled
         rebuildRows()
     }
 
@@ -362,15 +396,15 @@ final class UsageStore: ObservableObject {
                 if outcome.ok {
                     anchorGrace.insert(id)          // rebaseline next poll (ignore the anchor's own jump)
                     slidingIDs.remove(id)
-                    lastMessage = s.anchored(acc.label)
+                    lastMessage = .anchored(acc.label)
                 } else {
-                    lastMessage = "\(s.anchorFailed): \(outcome.output.suffix(140))"
+                    lastMessage = .anchorFailed(String(outcome.output.suffix(140)))
                 }
                 rebuildRows()
                 await refreshAll()
             } catch {
                 anchoringIDs.remove(id)
-                lastMessage = "\(s.anchorFailed): \(error.localizedDescription)"
+                lastMessage = .anchorFailed(error.localizedDescription)
                 rebuildRows()
             }
         }
@@ -381,11 +415,11 @@ final class UsageStore: ObservableObject {
         do {
             let acc = try AuthImport.importCurrent()
             let isNew = store.upsert(acc)
-            lastMessage = isNew ? s.added(acc.label) : s.updated(acc.label)
+            lastMessage = isNew ? .added(acc.label) : .updated(acc.label)
             rebuildRows()
             Task { await refreshAll() }
         } catch {
-            lastMessage = error.localizedDescription
+            lastMessage = .detail(error.localizedDescription)
         }
     }
 
@@ -467,10 +501,11 @@ final class UsageStore: ObservableObject {
         for o in results {
             if let r = o.refreshed { store.updateTokens(id: o.id, tokens: r) }
             store.updateLabels(id: o.id, email: o.email, plan: o.plan)
-            stateByID[o.id] = (usage: o.usage,
-                               error: o.needsReauth ? s.sessionExpired : o.error,
-                               loading: false,
-                               needsReauth: o.needsReauth)
+            // Keep the raw failure here, never a localized sentence: this
+            // snapshot outlives a language switch, so the wording has to be
+            // resolved when the row is drawn, not when it was fetched.
+            stateByID[o.id] = (usage: o.usage, error: o.error,
+                               loading: false, needsReauth: o.needsReauth)
         }
         isRefreshing = false
         lastUpdated = .now

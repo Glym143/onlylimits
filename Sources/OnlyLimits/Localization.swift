@@ -56,7 +56,16 @@ struct Strings {
     var addAccount: String { pick("Добавить аккаунт", "Add account", "アカウントを追加", "添加账户") }
     var waitingBrowser: String { pick("Ожидание браузера…", "Waiting for browser…", "ブラウザを待っています…", "等待浏览器…") }
     var cancelLoginHint: String { pick("Нажми, чтобы отменить", "Click to cancel", "クリックしてキャンセル", "点击取消") }
-    var loginCancelled: String { pick("Отменено", "Cancelled", "キャンセルしました", "已取消") }
+    var loginCancelled: String {
+        pick("Вход отменён", "Sign-in cancelled", "サインインをキャンセルしました", "已取消登录")
+    }
+    /// Cancelling a reconnect names the account, so the banner says which one.
+    func reconnectCancelled(_ label: String) -> String {
+        pick("Переподключение отменено: \(label)",
+             "Reconnect cancelled: \(label)",
+             "再接続をキャンセルしました：\(label)",
+             "已取消重新连接：\(label)")
+    }
 
     // Anchoring the weekly window
     var anchorButton: String { pick("Застолбить", "Anchor", "アンカー", "锚定") }
@@ -228,6 +237,7 @@ struct Strings {
         pick("Вход устарел", "Sign-in expired", "サインイン期限切れ", "登录已过期")
     }
     var reconnect: String { pick("Переподключить", "Reconnect", "再接続", "重新连接") }
+    var cancel: String { pick("Отмена", "Cancel", "キャンセル", "取消") }
     var reconnectHelp: String {
         pick("Открыть вход через браузер и обновить токены этого аккаунта",
              "Open the browser sign-in and refresh this account's tokens",
