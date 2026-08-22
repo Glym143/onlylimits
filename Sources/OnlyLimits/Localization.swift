@@ -220,6 +220,20 @@ struct Strings {
              "此账户当前正被 Codex CLI 使用")
     }
     var removeAccountHelp: String { pick("Убрать этот аккаунт", "Remove this account", "このアカウントを削除", "移除此账户") }
+
+    // Expired session / reconnect
+    /// Deliberately terse: the Reconnect button beside it already says what to
+    /// do, and the full sentence wrapped onto a second line in the panel.
+    var sessionExpired: String {
+        pick("Вход устарел", "Sign-in expired", "サインイン期限切れ", "登录已过期")
+    }
+    var reconnect: String { pick("Переподключить", "Reconnect", "再接続", "重新连接") }
+    var reconnectHelp: String {
+        pick("Открыть вход через браузер и обновить токены этого аккаунта",
+             "Open the browser sign-in and refresh this account's tokens",
+             "ブラウザでサインインし、このアカウントのトークンを更新します",
+             "打开浏览器登录并刷新此账户的令牌")
+    }
     var noWindow: String { pick("Нет активного окна лимита", "No active limit window", "アクティブな制限枠がありません", "无活动限额窗口") }
     var creditsUnlimited: String { pick("Кредиты: безлимит", "Credits: unlimited", "クレジット：無制限", "额度：无限") }
     func creditsBalance(_ x: String) -> String {
@@ -269,6 +283,16 @@ struct Strings {
     }
     func added(_ label: String) -> String { pick("Добавлен \(label)", "Added \(label)", "追加：\(label)", "已添加 \(label)") }
     func updated(_ label: String) -> String { pick("Обновлён \(label)", "Updated \(label)", "更新：\(label)", "已更新 \(label)") }
+    func reconnected(_ label: String) -> String {
+        pick("Переподключён \(label)", "Reconnected \(label)", "再接続：\(label)", "已重新连接 \(label)")
+    }
+    /// The browser session signed in as a different account than the row asked for.
+    func reconnectedOther(_ got: String, _ expected: String) -> String {
+        pick("Вход выполнен как \(got), а не \(expected) — аккаунт сохранён отдельно",
+             "Signed in as \(got), not \(expected) — saved as its own account",
+             "\(expected) ではなく \(got) でサインインしました — 別アカウントとして保存しました",
+             "已以 \(got) 登录，而非 \(expected) — 已另存为独立账户")
+    }
 
     private func within(_ v: Int, _ t: Int) -> Bool { abs(v - t) <= t / 10 }
 }

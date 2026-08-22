@@ -10,6 +10,10 @@ struct AccountRow: Identifiable {
     var usage: AccountUsage?
     var error: String?
     var isLoading: Bool
+    /// The stored refresh token no longer works — only a fresh browser sign-in
+    /// can revive this account, so the row offers a Reconnect button.
+    var needsReauth: Bool = false
+    var isReconnecting: Bool = false
 }
 
 /// Outcome of one account's network round-trip. Computed off the main actor,
@@ -21,6 +25,7 @@ private struct FetchOutcome {
     var plan: String?
     var refreshed: RefreshedTokens?
     var error: String?
+    var needsReauth: Bool = false
 }
 
 /// What the menu-bar title shows.
@@ -169,7 +174,9 @@ final class UsageStore: ObservableObject {
     @Published var refreshMinutes: Double = 5
 
     private let store = AccountStore()
-    private var stateByID: [String: (usage: AccountUsage?, error: String?, loading: Bool)] = [:]
+    private var stateByID: [String: (usage: AccountUsage?, error: String?, loading: Bool, needsReauth: Bool)] = [:]
+    /// Account ids currently running a browser re-authentication.
+    @Published private(set) var reconnectingIDs: Set<String> = []
     private var timer: Timer?
     private var updateTimer: Timer?
     private var loginTask: Task<Void, Never>?
@@ -283,13 +290,57 @@ final class UsageStore: ObservableObject {
         }
     }
 
+    /// Re-authenticate one already-stored account whose refresh token died.
+    ///
+    /// Same browser flow as `loginWithBrowser` — the Codex CLI is never involved,
+    /// which matters for accounts that were only ever added from the web. Signing
+    /// in as the same account rewrites its tokens in place (upsert is keyed by
+    /// account id and keeps `addedAt`), so the row simply comes back to life.
+    func reconnect(id: String) {
+        guard !isLoggingIn, !reconnectingIDs.contains(id) else { return }
+        let expected = store.accounts.first(where: { $0.id == id })?.label ?? id
+        isLoggingIn = true
+        reconnectingIDs.insert(id)
+        lastMessage = s.openingBrowser
+        rebuildRows()
+        loginTask = Task {
+            defer {
+                reconnectingIDs.remove(id)
+                isLoggingIn = false
+                loginTask = nil
+                rebuildRows()
+            }
+            do {
+                let acc = try await CodexLogin.login()
+                store.upsert(acc)
+                if acc.id == id {
+                    // Drop the stale error so the row shows "loading", not the
+                    // expired-session warning, while the first poll runs.
+                    stateByID[id] = (usage: stateByID[id]?.usage, error: nil,
+                                     loading: true, needsReauth: false)
+                    lastMessage = s.reconnected(acc.label)
+                } else {
+                    lastMessage = s.reconnectedOther(acc.label, expected)
+                }
+                rebuildRows()
+                await refreshAll()
+            } catch is CancellationError {
+                lastMessage = s.loginCancelled
+            } catch {
+                lastMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
+        }
+    }
+
     /// Abort a pending browser login (user changed their mind). Resets the
     /// button immediately and stops the local callback server.
     func cancelLogin() {
         loginTask?.cancel()
         loginTask = nil
         isLoggingIn = false
+        reconnectingIDs.removeAll()
         lastMessage = s.loginCancelled
+        rebuildRows()
     }
 
     /// Send one tiny Codex request as this account to start (anchor) its weekly
@@ -403,7 +454,7 @@ final class UsageStore: ObservableObject {
 
         activeAccountID = AuthImport.currentActiveAccountID()
         isRefreshing = true
-        for a in snapshot { stateByID[a.id, default: (nil, nil, false)].loading = true }
+        for a in snapshot { stateByID[a.id, default: (nil, nil, false, false)].loading = true }
         rebuildRows()
 
         let results = await withTaskGroup(of: FetchOutcome.self) { group -> [FetchOutcome] in
@@ -416,7 +467,10 @@ final class UsageStore: ObservableObject {
         for o in results {
             if let r = o.refreshed { store.updateTokens(id: o.id, tokens: r) }
             store.updateLabels(id: o.id, email: o.email, plan: o.plan)
-            stateByID[o.id] = (usage: o.usage, error: o.error, loading: false)
+            stateByID[o.id] = (usage: o.usage,
+                               error: o.needsReauth ? s.sessionExpired : o.error,
+                               loading: false,
+                               needsReauth: o.needsReauth)
         }
         isRefreshing = false
         lastUpdated = .now
@@ -466,7 +520,9 @@ final class UsageStore: ObservableObject {
                 let r = try await CodexClient.refresh(refreshToken: account.refreshToken)
                 access = r.accessToken; refreshed = r
             } catch {
-                return FetchOutcome(id: account.id, error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+                return FetchOutcome(id: account.id,
+                                    error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
+                                    needsReauth: true)
             }
         }
 
@@ -483,7 +539,8 @@ final class UsageStore: ObservableObject {
                                     email: resp.email, plan: resp.plan_type, refreshed: r)
             } catch {
                 return FetchOutcome(id: account.id, refreshed: refreshed,
-                                    error: (error as? LocalizedError)?.errorDescription ?? "Re-import this account (codex login).")
+                                    error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
+                                    needsReauth: true)
             }
         } catch {
             return FetchOutcome(id: account.id, refreshed: refreshed,
@@ -497,7 +554,9 @@ final class UsageStore: ObservableObject {
         let built = store.accounts.map { a -> AccountRow in
             let st = stateByID[a.id]
             return AccountRow(id: a.id, label: a.label, plan: a.planType,
-                              usage: st?.usage, error: st?.error, isLoading: st?.loading ?? false)
+                              usage: st?.usage, error: st?.error, isLoading: st?.loading ?? false,
+                              needsReauth: st?.needsReauth ?? false,
+                              isReconnecting: reconnectingIDs.contains(a.id))
         }
         rows = sorted(built)
     }

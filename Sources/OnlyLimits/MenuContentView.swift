@@ -52,7 +52,9 @@ struct MenuContentView: View {
                                        canAnchor: store.canAnchor,
                                        strings: s,
                                        onRemove: { store.remove(id: row.id) },
-                                       onAnchor: { store.anchor(id: row.id) })
+                                       onAnchor: { store.anchor(id: row.id) },
+                                       loginBusy: store.isLoggingIn,
+                                       onReconnect: { store.reconnect(id: row.id) })
                         if row.id != store.rows.last?.id { Divider().padding(.leading, 12) }
                     }
                 }
@@ -370,6 +372,9 @@ struct AccountRowView: View {
     let strings: Strings
     let onRemove: () -> Void
     let onAnchor: () -> Void
+    /// Some browser sign-in is already in flight — don't offer a second one.
+    let loginBusy: Bool
+    let onReconnect: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -399,9 +404,28 @@ struct AccountRowView: View {
             }
 
             if let error = row.error, row.usage == nil {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.caption).foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Message and action share one line — same shape as the anchor
+                // hint below, so a failing row doesn't grow a second stacked row.
+                HStack(spacing: 8) {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.caption).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if row.needsReauth {
+                        Spacer(minLength: 6)
+                        // A dead refresh token can only be revived by a fresh
+                        // browser sign-in — offer it right where the failure shows.
+                        if row.isReconnecting {
+                            ProgressView().controlSize(.mini)
+                        } else {
+                            // Worded, so the control needs no explaining — the
+                            // status text beside it is kept terse to make room.
+                            Button(strings.reconnect, action: onReconnect)
+                                .buttonStyle(.bordered).controlSize(.small)
+                                .disabled(loginBusy)
+                                .help(strings.reconnectHelp)
+                        }
+                    }
+                }
             } else if let usage = row.usage {
                 if usage.windows.isEmpty {
                     Text(strings.noWindow).font(.caption).foregroundStyle(.secondary)
